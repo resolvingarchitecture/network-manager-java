@@ -19,6 +19,10 @@ public class NetworkManagerService extends BaseService {
     private static final Logger LOG = Logger.getLogger(NetworkManagerService.class.getName());
 
     public static final String OPERATION_SEND = "SEND";
+    public static final String OPERATION_REGISTER_NETWORK = "REGISTER_NETWORK";
+    public static final String OPERATION_UPDATE_NETWORK_STATE = "UPDATE_NETWORK_STATE";
+    public static final String OPERATION_UPDATE_SITUATIONAL_STATE = "UPDATE_SITUATIONAL_STATE";
+    public static final String OPERATION_UPDATE_GLOBAL_STATE = "UPDATE_GLOBAL_STATE";
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusListener listener) {
         super(producer, listener);
