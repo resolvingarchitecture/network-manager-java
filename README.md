@@ -1,4 +1,9 @@
 # Resolving Architecture Network Manager
-Manages registered Networks.
+Provides information on all known networks including status and statistics to aid in making decisions on network selection.
 
-## Roadmap
+## Features Roadmap
+
+### 1.0.0
+* 
+
+

@@ -2,6 +2,7 @@ package ra.network.manager;
 
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
+import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
@@ -18,11 +19,19 @@ public class NetworkManagerService extends BaseService {
 
     private static final Logger LOG = Logger.getLogger(NetworkManagerService.class.getName());
 
+    // Used by other services to delegate sending messages allowing the Network Manager to determine which network to
+    // use if no External Route is present. If an External Route is present, the Network Manager will simply use it.
     public static final String OPERATION_SEND = "SEND";
-    public static final String OPERATION_REGISTER_NETWORK = "REGISTER_NETWORK";
+    // Sent by Network Services to update the Network Manager on state changes.
     public static final String OPERATION_UPDATE_NETWORK_STATE = "UPDATE_NETWORK_STATE";
+    // Sent by End Users to update the Network Manager on their situation.
     public static final String OPERATION_UPDATE_SITUATIONAL_STATE = "UPDATE_SITUATIONAL_STATE";
+    // Sent by Press Freedom Index Scraper and/or other services evaluating global state.
     public static final String OPERATION_UPDATE_GLOBAL_STATE = "UPDATE_GLOBAL_STATE";
+    // Returns a list of the current Networks States
+    public static final String OPERATION_LOCAL_NETWORKS = "LOCAL_NETWORKS";
+    // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
+    public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusListener listener) {
         super(producer, listener);
@@ -33,13 +42,35 @@ public class NetworkManagerService extends BaseService {
         Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
         switch(r.getOperation()) {
             case OPERATION_SEND: {send(envelope);break;}
+            case OPERATION_UPDATE_NETWORK_STATE: {
+
+                break;
+            }
+            case OPERATION_UPDATE_SITUATIONAL_STATE: {
+
+                break;
+            }
+            case OPERATION_UPDATE_GLOBAL_STATE: {
+
+                break;
+            }
+            case OPERATION_LOCAL_NETWORKS: {
+
+                break;
+            }
+            case OPERATION_ACTIVE_NETWORKS: {
+
+                break;
+            }
             default: {deadLetter(envelope);break;}
         }
     }
 
     @Override
     public boolean send(Envelope e) {
-        // Determine which Network to forward the send request
+        // If next route is an External Route just forward it to the route.
+
+        // If not, determine best External Route for this message and add it to the slip then forward it on.
 
         return false;
     }
