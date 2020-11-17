@@ -2,11 +2,10 @@ package ra.network.manager;
 
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
-import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
-import ra.common.service.ServiceStatusListener;
+import ra.common.service.ServiceStatusObserver;
 import ra.util.Config;
 
 import java.util.*;
@@ -33,8 +32,8 @@ public class NetworkManagerService extends BaseService {
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
-    public NetworkManagerService(MessageProducer producer, ServiceStatusListener listener) {
-        super(producer, listener);
+    public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
+        super(producer, observer);
     }
 
     @Override
