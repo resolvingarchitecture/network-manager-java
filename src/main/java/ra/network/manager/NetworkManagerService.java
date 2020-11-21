@@ -2,17 +2,29 @@ package ra.network.manager;
 
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
+import ra.common.network.NetworkState;
+import ra.common.network.NetworkStatus;
+import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusObserver;
 import ra.util.Config;
+import ra.util.FileUtil;
+import ra.util.tasks.TaskRunner;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
 /**
  * Network Manager as a service.
+ *
+ * Determines if requested network is available.
+ * If so, it forwards on to that network service.
+ * If not, it returns
+ *
  */
 public class NetworkManagerService extends BaseService {
 
@@ -32,17 +44,25 @@ public class NetworkManagerService extends BaseService {
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
+    Map<String, NetworkState> networkStates = new HashMap<>();
+    private File messageHold;
+    private final TaskRunner taskRunner;
+
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
+        taskRunner = new TaskRunner(1,1);
     }
 
     @Override
     public void handleDocument(Envelope envelope) {
         Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
         switch(r.getOperation()) {
-            case OPERATION_SEND: {send(envelope);break;}
+            case OPERATION_SEND: {
+                send(envelope);break;
+            }
             case OPERATION_UPDATE_NETWORK_STATE: {
-
+                NetworkState networkState = (NetworkState)envelope.getContent();
+                networkStates.put(networkState.network, networkState);
                 break;
             }
             case OPERATION_UPDATE_SITUATIONAL_STATE: {
@@ -54,11 +74,21 @@ public class NetworkManagerService extends BaseService {
                 break;
             }
             case OPERATION_LOCAL_NETWORKS: {
-
+                List<String> networks = new ArrayList<>();
+                for(NetworkState ns : networkStates.values()) {
+                    networks.add(ns.network);
+                }
+                envelope.addContent(networks);
                 break;
             }
             case OPERATION_ACTIVE_NETWORKS: {
-
+                List<String> networks = new ArrayList<>();
+                for(NetworkState ns : networkStates.values()) {
+                    if(ns.networkStatus == NetworkStatus.CONNECTED) {
+                        networks.add(ns.network);
+                    }
+                }
+                envelope.addContent(networks);
                 break;
             }
             default: {deadLetter(envelope);break;}
@@ -67,12 +97,34 @@ public class NetworkManagerService extends BaseService {
 
     @Override
     public boolean send(Envelope e) {
-        // If next route is an External Route just forward it to the route.
-
-        // If not, determine best External Route for this message and add it to the slip then forward it on.
-
-        return false;
+        // Evaluate what to do based on desired network
+        Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
+        String service = r.getService().toLowerCase();
+        boolean ready = false;
+        for(NetworkState ns : networkStates.values()) {
+            if(service.startsWith(ns.network.toLowerCase())) {
+                if(ns.networkStatus == NetworkStatus.CONNECTED) {
+                    ready = true;
+                }
+            }
+        }
+        if(!ready) {
+            File envFile = new File(messageHold, e.getId());
+            try {
+                if(!envFile.createNewFile()) {
+                    LOG.warning("Unable to create file to persist Envelope waiting on network");
+                    return false;
+                }
+            } catch (IOException ioException) {
+                LOG.warning(ioException.getLocalizedMessage());
+                return false;
+            }
+            FileUtil.writeFile(e.toJSON().getBytes(), envFile.getAbsolutePath());
+        }
+        return true;
     }
+
+
 
     @Override
     public boolean start(Properties p) {
@@ -86,6 +138,17 @@ public class NetworkManagerService extends BaseService {
             return false;
         }
         config.put("ra.network.manager.dir", getServiceDirectory().getAbsolutePath());
+        messageHold = new File(getServiceDirectory(), "msg");
+        if(!messageHold.exists() && !messageHold.mkdir()) {
+            LOG.severe("Unable to create message hold directory.");
+            return false;
+        }
+        DelayedSend task = new DelayedSend(this, taskRunner, messageHold);
+        task.setDelayed(true);
+        task.setDelayTimeMS(5000L);
+        task.setPeriodicity(60 * 1000L); // Check every minute
+        taskRunner.addTask(task);
+
         updateStatus(ServiceStatus.RUNNING);
         return true;
     }
