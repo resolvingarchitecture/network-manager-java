@@ -1,10 +1,9 @@
-package ra.network.manager;
+package ra.networkmanager;
 
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
 import ra.common.network.NetworkState;
 import ra.common.network.NetworkStatus;
-import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.ServiceStatus;
@@ -47,10 +46,12 @@ public class NetworkManagerService extends BaseService {
     protected Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
     protected final TaskRunner taskRunner;
+    protected PeerManager peerManager;
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
         taskRunner = new TaskRunner(1,1);
+        peerManager = new PeerManager();
     }
 
     @Override
@@ -136,7 +137,7 @@ public class NetworkManagerService extends BaseService {
         LOG.info("Initializing...");
         updateStatus(ServiceStatus.INITIALIZING);
         try {
-            config = Config.loadFromClasspath("ra-network-manager.config", p, false);
+            config = Config.loadAll(p, "ra-network-manager.config");
         } catch (Exception e) {
             LOG.severe(e.getLocalizedMessage());
             return false;
@@ -152,6 +153,8 @@ public class NetworkManagerService extends BaseService {
         task.setDelayTimeMS(5000L);
         task.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(task);
+
+        peerManager.init(getServiceDirectory().getAbsolutePath(), config);
 
         updateStatus(ServiceStatus.RUNNING);
         return true;

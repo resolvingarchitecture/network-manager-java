@@ -1,4 +1,4 @@
-package ra.network.manager;
+package ra.networkmanager;
 
 import org.junit.AfterClass;
 import org.junit.Assert;

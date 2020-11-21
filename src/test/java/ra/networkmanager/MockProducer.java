@@ -1,4 +1,4 @@
-package ra.network.manager;
+package ra.networkmanager;
 
 import ra.common.Client;
 import ra.common.Envelope;
@@ -18,6 +18,12 @@ public class MockProducer implements MessageProducer {
 
     @Override
     public boolean send(Envelope envelope, Client client) {
+        LOG.info(envelope.toJSON());
+        return true;
+    }
+
+    @Override
+    public boolean deadLetter(Envelope envelope) {
         LOG.info(envelope.toJSON());
         return true;
     }

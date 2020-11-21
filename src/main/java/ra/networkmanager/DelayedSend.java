@@ -1,4 +1,4 @@
-package ra.network.manager;
+package ra.networkmanager;
 
 import ra.common.Envelope;
 import ra.common.network.NetworkState;
