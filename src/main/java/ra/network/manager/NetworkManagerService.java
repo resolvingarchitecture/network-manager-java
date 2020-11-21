@@ -121,6 +121,7 @@ public class NetworkManagerService extends BaseService {
             }
             FileUtil.writeFile(e.toJSON().getBytes(), envFile.getAbsolutePath());
             LOG.info("Persisted message (id="+e.getId()+") to file for later sending.");
+            return true;
         }
         return producer.send(e);
     }
