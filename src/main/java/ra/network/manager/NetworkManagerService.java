@@ -45,8 +45,8 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
     protected Map<String, NetworkState> networkStates = new HashMap<>();
-    private File messageHold;
-    private final TaskRunner taskRunner;
+    protected File messageHold;
+    protected final TaskRunner taskRunner;
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
