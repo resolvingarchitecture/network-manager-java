@@ -48,6 +48,7 @@ public class DelayedSend extends BaseTask {
                 if(serviceName.startsWith(ns.network.toLowerCase())) {
                     if(ns.networkStatus == NetworkStatus.CONNECTED) {
                         if(service.send(e)) {
+                            LOG.info("Delayed message sent successfully.");
                             if(!msg.delete()) {
                                 LOG.warning("Message sent successfully but unable to delete its file: "+msg.getAbsolutePath());
                             }

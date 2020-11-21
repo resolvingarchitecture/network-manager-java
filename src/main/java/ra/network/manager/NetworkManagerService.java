@@ -44,7 +44,7 @@ public class NetworkManagerService extends BaseService {
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
-    Map<String, NetworkState> networkStates = new HashMap<>();
+    protected Map<String, NetworkState> networkStates = new HashMap<>();
     private File messageHold;
     private final TaskRunner taskRunner;
 
@@ -120,11 +120,14 @@ public class NetworkManagerService extends BaseService {
                 return false;
             }
             FileUtil.writeFile(e.toJSON().getBytes(), envFile.getAbsolutePath());
+            LOG.info("Persisted message (id="+e.getId()+") to file for later sending.");
         }
-        return true;
+        return producer.send(e);
     }
 
-
+    Collection<NetworkState> getNetworkStates() {
+        return networkStates.values();
+    }
 
     @Override
     public boolean start(Properties p) {
