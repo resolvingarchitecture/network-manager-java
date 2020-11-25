@@ -1,6 +1,7 @@
 package ra.networkmanager;
 
 import ra.common.identity.DID;
+import ra.common.network.Network;
 import ra.common.network.NetworkNode;
 import ra.common.network.NetworkPeer;
 import ra.util.JSONParser;
@@ -62,7 +63,7 @@ class PeerDB {
             try {
                 peerByIdAndNetwork.clearParameters();
                 peerByIdAndNetwork.setString(1, p.getId());
-                peerByIdAndNetwork.setString(2, p.getNetwork());
+                peerByIdAndNetwork.setString(2, p.getNetwork().name());
                 rs = peerByIdAndNetwork.executeQuery();
                 update = rs.next();
             } catch (SQLException e) {
@@ -197,7 +198,7 @@ class PeerDB {
         }
         NetworkPeer p = null;
         ResultSet rs = null;
-        int total = numberPeersByNetwork(fromPeer.getNetwork());
+        int total = numberPeersByNetwork(fromPeer.getNetwork().name());
         if(total==0) {
             LOG.warning("No peers found for network: "+fromPeer.getNetwork());
             return null;
@@ -211,7 +212,7 @@ class PeerDB {
             synchronized (peersByNetworkLock) {
                 try {
                     peersByNetwork.clearParameters();
-                    peersByNetwork.setString(1, fromPeer.getNetwork());
+                    peersByNetwork.setString(1, fromPeer.getNetwork().name());
                     rs = peersByNetwork.executeQuery();
                     if (rs.first()) {
                         rs.absolute(random);
@@ -274,7 +275,7 @@ class PeerDB {
                 peerByIdAndNetwork.setString(2, network);
                 rs = peerByIdAndNetwork.executeQuery();
                 if (rs.next()) {
-                    p = new NetworkPeer(rs.getString(NetworkPeer.NETWORK));
+                    p = new NetworkPeer(Network.valueOf(rs.getString(NetworkPeer.NETWORK)));
                     p.setId(rs.getString(NetworkPeer.ID));
                     p.getDid().setUsername(rs.getString(NetworkPeer.USERNAME));
                     p.getDid().getPublicKey().setAlias(rs.getString(NetworkPeer.ALIAS));
@@ -305,7 +306,7 @@ class PeerDB {
                 peerByAddress.setString(1, address);
                 rs = peerByAddress.executeQuery();
                 if (rs.next()) {
-                    p = new NetworkPeer(rs.getString(NetworkPeer.NETWORK));
+                    p = new NetworkPeer(Network.valueOf(rs.getString(NetworkPeer.NETWORK)));
                     p.setId(rs.getString(NetworkPeer.ID));
                     p.getDid().setUsername(rs.getString(NetworkPeer.USERNAME));
                     p.getDid().getPublicKey().setAlias(rs.getString(NetworkPeer.ALIAS));
@@ -424,7 +425,7 @@ class PeerDB {
 
     private NetworkPeer toPeer(ResultSet rs) throws SQLException {
         DID did = new DID();
-        NetworkPeer p = new NetworkPeer(rs.getString("network"));
+        NetworkPeer p = new NetworkPeer(Network.valueOf(rs.getString("network")));
         p.setDid(did);
         p.setId(rs.getString("id"));
         did.setUsername(rs.getString("username"));

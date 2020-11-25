@@ -63,7 +63,7 @@ public class NetworkManagerService extends BaseService {
             }
             case OPERATION_UPDATE_NETWORK_STATE: {
                 NetworkState networkState = (NetworkState)envelope.getContent();
-                networkStates.put(networkState.network, networkState);
+                networkStates.put(networkState.network.name(), networkState);
                 break;
             }
             case OPERATION_UPDATE_SITUATIONAL_STATE: {
@@ -77,7 +77,7 @@ public class NetworkManagerService extends BaseService {
             case OPERATION_LOCAL_NETWORKS: {
                 List<String> networks = new ArrayList<>();
                 for(NetworkState ns : networkStates.values()) {
-                    networks.add(ns.network);
+                    networks.add(ns.network.name());
                 }
                 envelope.addContent(networks);
                 break;
@@ -86,7 +86,7 @@ public class NetworkManagerService extends BaseService {
                 List<String> networks = new ArrayList<>();
                 for(NetworkState ns : networkStates.values()) {
                     if(ns.networkStatus == NetworkStatus.CONNECTED) {
-                        networks.add(ns.network);
+                        networks.add(ns.network.name());
                     }
                 }
                 envelope.addContent(networks);
@@ -103,7 +103,7 @@ public class NetworkManagerService extends BaseService {
         String service = r.getService().toLowerCase();
         boolean ready = false;
         for(NetworkState ns : networkStates.values()) {
-            if(service.startsWith(ns.network.toLowerCase())) {
+            if(service.startsWith(ns.network.name().toLowerCase())) {
                 if(ns.networkStatus == NetworkStatus.CONNECTED) {
                     ready = true;
                 }

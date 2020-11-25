@@ -8,6 +8,7 @@ import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
+import ra.common.network.Network;
 import ra.common.network.NetworkPeer;
 import ra.util.FileUtil;
 
@@ -350,7 +351,7 @@ class PeerRelationshipsDB {
     }
 
     private NetworkPeer toPeer(PropertyContainer n) {
-        NetworkPeer networkPeer = new NetworkPeer((String)n.getProperty("network"));
+        NetworkPeer networkPeer = new NetworkPeer(Network.valueOf((String)n.getProperty("network")));
         networkPeer.setId((String)n.getProperty("id"));
         return networkPeer;
     }

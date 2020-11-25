@@ -45,7 +45,7 @@ public class DelayedSend extends BaseTask {
             Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
             String serviceName = r.getService();
             for(NetworkState ns : networkStates) {
-                if(serviceName.startsWith(ns.network.toLowerCase())) {
+                if(serviceName.startsWith(ns.network.name().toLowerCase())) {
                     if(ns.networkStatus == NetworkStatus.CONNECTED) {
                         if(service.send(e)) {
                             LOG.info("Delayed message sent successfully.");
