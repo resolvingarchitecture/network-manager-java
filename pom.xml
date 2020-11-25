@@ -11,7 +11,7 @@
 
 	<name>ra-network-manager</name>
 	<url>https://resolvingarchitecture.io</url>
-	<description>Resolving Architecture - HTTP Client</description>
+	<description>Resolving Architecture - Network Manager</description>
 	<inceptionYear>2020</inceptionYear>
 
 	<properties>
