@@ -2,6 +2,8 @@ package ra.networkmanager;
 
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
+import ra.common.network.Network;
+import ra.common.network.NetworkService;
 import ra.common.network.NetworkState;
 import ra.common.network.NetworkStatus;
 import ra.common.route.Route;
@@ -14,6 +16,7 @@ import ra.util.tasks.TaskRunner;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -62,8 +65,7 @@ public class NetworkManagerService extends BaseService {
                 send(envelope);break;
             }
             case OPERATION_UPDATE_NETWORK_STATE: {
-                NetworkState networkState = (NetworkState)envelope.getContent();
-                networkStates.put(networkState.network.name(), networkState);
+                updateNetworkState(envelope);
                 break;
             }
             case OPERATION_UPDATE_SITUATIONAL_STATE: {
@@ -96,20 +98,109 @@ public class NetworkManagerService extends BaseService {
         }
     }
 
+    protected void updateNetworkState(Envelope envelope) {
+        NetworkState networkState = (NetworkState)envelope.getContent();
+        networkStates.put(networkState.network.name(), networkState);
+        switch (networkState.networkStatus) {
+            case NOT_INSTALLED: {
+                LOG.info(networkState.network.name() + " reporting not installed....");
+                break;
+            }
+            case WAITING: {
+                LOG.info(networkState.network.name() + " reporting waiting....");
+                break;
+            }
+            case FAILED: {
+                LOG.info(networkState.network.name() + " reporting network failed....");
+                break;
+            }
+            case HANGING: {
+                LOG.info(networkState.network.name() + " reporting network hanging....");
+                break;
+            }
+            case PORT_CONFLICT: {
+                LOG.info(networkState.network.name() + " reporting port conflict....");
+                break;
+            }
+            case CONNECTING: {
+                LOG.info(networkState.network.name() + " reporting connecting....");
+                break;
+            }
+            case CONNECTED: {
+                LOG.info(networkState.network.name() + " reporting connected.");
+                break;
+            }
+            case DISCONNECTED: {
+                LOG.info(networkState.network.name() + " reporting disconnected....");
+                break;
+            }
+            case VERIFIED: {
+                LOG.info(networkState.network.name() + " reporting verified.");
+                break;
+            }
+            case BLOCKED: {
+                LOG.info(networkState.network.name() + " reporting blocked.");
+                break;
+            }
+            case ERROR: {
+                LOG.info(networkState.network.name() + " reporting error. Initiating hard restart...");
+                break;
+            }
+            default: LOG.warning("Network Status for network "+networkState.network.name()+" not being handled: "+networkState.networkStatus.name());
+        }
+    }
+
+    protected boolean isNetworkReady(Network network) {
+        switch (network) {
+            case HTTP: return NetworkStatus.CONNECTED == getNetworkStatus(Network.HTTP);
+            case Tor: return NetworkStatus.CONNECTED == getNetworkStatus(Network.Tor);
+            case I2P: return NetworkStatus.CONNECTED == getNetworkStatus(Network.I2P);
+            case Bluetooth: return NetworkStatus.CONNECTED == getNetworkStatus(Network.Bluetooth);
+            case WiFi: return NetworkStatus.CONNECTED == getNetworkStatus(Network.WiFi);
+            case Satellite: return NetworkStatus.CONNECTED == getNetworkStatus(Network.Satellite);
+            case FSRadio: return NetworkStatus.CONNECTED == getNetworkStatus(Network.FSRadio);
+            case LiFi: return NetworkStatus.CONNECTED == getNetworkStatus(Network.LiFi);
+            default: return false;
+        }
+    }
+
+    protected Network getNetworkFromService(String service) {
+        Object obj = null;
+        try {
+            obj = Class.forName(service).getConstructor().newInstance();
+        } catch (Exception e) {
+            LOG.warning(e.getLocalizedMessage());
+            return null;
+        }
+        if(obj instanceof NetworkService) {
+            NetworkService ns = (NetworkService)obj;
+            return ns.getNetworkState().network;
+        }
+        return null;
+    }
+
+    protected NetworkStatus getNetworkStatus(Network network) {
+        return networkStates.get(network.name()).networkStatus;
+    }
+
     @Override
     public boolean send(Envelope e) {
         // Evaluate what to do based on desired network
         Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
         String service = r.getService().toLowerCase();
-        boolean ready = false;
-        for(NetworkState ns : networkStates.values()) {
-            if(service.startsWith(ns.network.name().toLowerCase())) {
-                if(ns.networkStatus == NetworkStatus.CONNECTED) {
-                    ready = true;
-                }
-            }
+        Network network = getNetworkFromService(service);
+        if(network==null) {
+            LOG.warning("Network Service requested not a Network Service; dead lettering envelope.");
+            deadLetter(e);
+            return true;
         }
-        if(!ready) {
+        NetworkState networkState = networkStates.get(network.name());
+        if(networkState==null) {
+            LOG.warning("Network Service requested not running; dead lettering envelope for now.");
+            deadLetter(e);
+            return true;
+        }
+        if(networkState.networkStatus != NetworkStatus.CONNECTED) {
             File envFile = new File(messageHold, e.getId());
             try {
                 if(!envFile.createNewFile()) {
