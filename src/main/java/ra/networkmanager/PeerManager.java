@@ -3,6 +3,7 @@ package ra.networkmanager;
 import ra.common.DLC;
 import ra.common.Envelope;
 import ra.common.messaging.MessageProducer;
+import ra.common.network.Network;
 import ra.common.network.NetworkPeer;
 import ra.common.network.NetworkState;
 import ra.common.route.Route;

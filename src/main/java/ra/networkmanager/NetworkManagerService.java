@@ -46,15 +46,27 @@ public class NetworkManagerService extends BaseService {
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
-    protected Map<String, NetworkState> networkStates = new HashMap<>();
+    protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
     protected final TaskRunner taskRunner;
-    protected PeerManager peerManager;
+    protected final PeerManager peerManager;
+
+    public NetworkManagerService() {
+        super();
+        taskRunner = new TaskRunner(1,1);
+        peerManager = new PeerManager();
+    }
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
         taskRunner = new TaskRunner(1,1);
         peerManager = new PeerManager();
+    }
+
+    public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer, PeerManager peerManager) {
+        super(producer, observer);
+        this.peerManager = peerManager;
+        taskRunner = new TaskRunner(1,1);
     }
 
     @Override
@@ -150,7 +162,7 @@ public class NetworkManagerService extends BaseService {
         }
     }
 
-    protected boolean isNetworkReady(Network network) {
+    public boolean isNetworkReady(Network network) {
         switch (network) {
             case HTTP: return NetworkStatus.CONNECTED == getNetworkStatus(Network.HTTP);
             case Tor: return NetworkStatus.CONNECTED == getNetworkStatus(Network.Tor);
@@ -162,6 +174,21 @@ public class NetworkManagerService extends BaseService {
             case LiFi: return NetworkStatus.CONNECTED == getNetworkStatus(Network.LiFi);
             default: return false;
         }
+    }
+
+    public Network firstAvailableNonInternetNetwork() {
+        if(getNetworkStatus(Network.Bluetooth)==NetworkStatus.CONNECTED)
+            return Network.Bluetooth;
+        else if(getNetworkStatus(Network.WiFi)==NetworkStatus.CONNECTED)
+            return Network.WiFi;
+        else if(getNetworkStatus(Network.Satellite)==NetworkStatus.CONNECTED)
+            return Network.Satellite;
+        else if(getNetworkStatus(Network.FSRadio)==NetworkStatus.CONNECTED)
+            return Network.FSRadio;
+        else if(getNetworkStatus(Network.LiFi)==NetworkStatus.CONNECTED)
+            return Network.LiFi;
+        else
+            return null;
     }
 
     protected Network getNetworkFromService(String service) {
@@ -183,6 +210,19 @@ public class NetworkManagerService extends BaseService {
         return networkStates.get(network.name()).networkStatus;
     }
 
+    protected String networkService(Network network) {
+        switch (network) {
+            case Tor: return "ra.tor.TORClientService";
+            case I2P: return "ra.i2p.I2PService";
+            case Bluetooth: return "ra.bluetooth.BluetoothService";
+            case WiFi: return "ra.wifi.WiFiService";
+            case Satellite: return "ra.satellite.SatelliteService";
+            case FSRadio: return "ra.fsradio.FullSpectrumRadioService";
+            case LiFi: return "ra.lifi.LiFiService";
+            default: return null;
+        }
+    }
+
     @Override
     public boolean send(Envelope e) {
         // Evaluate what to do based on desired network
@@ -201,21 +241,25 @@ public class NetworkManagerService extends BaseService {
             return true;
         }
         if(networkState.networkStatus != NetworkStatus.CONNECTED) {
-            File envFile = new File(messageHold, e.getId());
-            try {
-                if(!envFile.createNewFile()) {
-                    LOG.warning("Unable to create file to persist Envelope waiting on network");
-                    return false;
-                }
-            } catch (IOException ioException) {
-                LOG.warning(ioException.getLocalizedMessage());
-                return false;
-            }
-            FileUtil.writeFile(e.toJSON().getBytes(), envFile.getAbsolutePath());
-            LOG.info("Persisted message (id="+e.getId()+") to file for later sending.");
-            return true;
+            return sendToMessageHold(e);
         }
         return producer.send(e);
+    }
+
+    protected boolean sendToMessageHold(Envelope e) {
+        File envFile = new File(messageHold, e.getId());
+        try {
+            if(!envFile.createNewFile()) {
+                LOG.warning("Unable to create file to persist Envelope waiting on network");
+                return false;
+            }
+        } catch (IOException ioException) {
+            LOG.warning(ioException.getLocalizedMessage());
+            return false;
+        }
+        FileUtil.writeFile(e.toJSON().getBytes(), envFile.getAbsolutePath());
+        LOG.info("Persisted message (id="+e.getId()+") to file for later sending.");
+        return true;
     }
 
     Collection<NetworkState> getNetworkStates() {
