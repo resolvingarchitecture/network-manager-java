@@ -1,6 +1,7 @@
 package ra.networkmanager;
 
 import ra.common.Envelope;
+import ra.common.messaging.EventMessage;
 import ra.common.messaging.MessageProducer;
 import ra.common.network.Network;
 import ra.common.network.NetworkService;
@@ -70,15 +71,24 @@ public class NetworkManagerService extends BaseService {
     }
 
     @Override
+    public void handleEvent(Envelope envelope) {
+        Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
+        switch(r.getOperation()) {
+            case OPERATION_UPDATE_NETWORK_STATE: {
+                LOG.info("Received UPDATE_NETWORK_STATE event...");
+                updateNetworkState(envelope);
+                break;
+            }
+            default: {deadLetter(envelope);break;}
+        }
+    }
+
+    @Override
     public void handleDocument(Envelope envelope) {
         Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
         switch(r.getOperation()) {
             case OPERATION_SEND: {
                 send(envelope);break;
-            }
-            case OPERATION_UPDATE_NETWORK_STATE: {
-                updateNetworkState(envelope);
-                break;
             }
             case OPERATION_UPDATE_SITUATIONAL_STATE: {
 
@@ -111,7 +121,12 @@ public class NetworkManagerService extends BaseService {
     }
 
     protected void updateNetworkState(Envelope envelope) {
-        NetworkState networkState = (NetworkState)envelope.getContent();
+        if(!(envelope.getMessage() instanceof EventMessage)) {
+            LOG.warning("Network State must be within an Event Message.");
+            return;
+        }
+        EventMessage em = (EventMessage)envelope.getMessage();
+        NetworkState networkState = (NetworkState)em.getMessage();
         networkStates.put(networkState.network.name(), networkState);
         switch (networkState.networkStatus) {
             case NOT_INSTALLED: {
@@ -155,11 +170,17 @@ public class NetworkManagerService extends BaseService {
                 break;
             }
             case ERROR: {
-                LOG.info(networkState.network.name() + " reporting error. Initiating hard restart...");
+                LOG.info(networkState.network.name() + " reporting errored.");
                 break;
             }
-            default: LOG.warning("Network Status for network "+networkState.network.name()+" not being handled: "+networkState.networkStatus.name());
+            default: {
+                LOG.warning("Network Status for network "+networkState.network.name()+" not being handled: "+networkState.networkStatus.name());
+            }
         }
+        // Send on to subscribers
+        envelope.addRoute("ra.notification.NotificationService","PUBLISH");
+        envelope.ratchet();
+        producer.send(envelope);
     }
 
     public boolean isNetworkReady(Network network) {

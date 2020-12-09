@@ -377,10 +377,14 @@ class PeerDB {
 
             Statement stmt = null;
             try {
-                stmt = connection.createStatement();
+               stmt = connection.createStatement();
                 stmt.execute("create table peer (id varchar(256) not null, network varchar(16) not null, username varchar(32), alias varchar(32), address varchar(4096), fingerprint varchar(256), keyType varchar(32), port int, attributes varchar(4096)) ");
             } catch (SQLException e) {
-                LOG.info(e.getLocalizedMessage());
+                String eMsg = e.getLocalizedMessage();
+                if(!"Table/View 'PEER' already exists in Schema 'APP'.".equals(eMsg)) {
+                    LOG.severe(e.getLocalizedMessage());
+                    return false;
+                }
             } finally {
                 if(stmt!=null) {
                     try {
