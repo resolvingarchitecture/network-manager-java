@@ -49,8 +49,8 @@ public class NetworkManagerService extends BaseService {
 
     protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
-    protected final TaskRunner taskRunner;
-    protected final PeerManager peerManager;
+    protected TaskRunner taskRunner;
+    protected PeerManager peerManager;
 
     public NetworkManagerService() {
         super();
