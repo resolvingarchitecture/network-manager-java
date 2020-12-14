@@ -246,23 +246,18 @@ public class NetworkManagerService extends BaseService {
 
     @Override
     public boolean send(Envelope e) {
-        // Evaluate what to do based on desired network
+        if(e.getRoute()!=null && "ra.notification.NotificationService".equals(e.getRoute().getService())) {
+            // This is a notification from this service
+            return producer.send(e);
+        }
         Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
         String service = r.getService().toLowerCase();
         Network network = getNetworkFromService(service);
-        if(network==null) {
-            LOG.warning("Network Service requested not a Network Service; dead lettering envelope.");
-            deadLetter(e);
-            return true;
-        }
-        NetworkState networkState = networkStates.get(network.name());
-        if(networkState==null) {
-            LOG.warning("Network Service requested not running; dead lettering envelope for now.");
-            deadLetter(e);
-            return true;
-        }
-        if(networkState.networkStatus != NetworkStatus.CONNECTED) {
-            return sendToMessageHold(e);
+        if(network!=null) {
+            NetworkState networkState = networkStates.get(network.name());
+            if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
+                return sendToMessageHold(e);
+            }
         }
         return producer.send(e);
     }
