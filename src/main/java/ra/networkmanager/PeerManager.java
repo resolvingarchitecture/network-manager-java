@@ -1,35 +1,15 @@
 package ra.networkmanager;
 
-import ra.common.DLC;
-import ra.common.Envelope;
-import ra.common.messaging.MessageProducer;
-import ra.common.network.Network;
 import ra.common.network.NetworkPeer;
-import ra.common.network.NetworkState;
-import ra.common.route.Route;
-import ra.common.service.BaseService;
-import ra.common.service.ServiceStatusObserver;
-import ra.util.Config;
 import ra.util.tasks.TaskRunner;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.List;
 import java.util.Properties;
 import java.util.logging.Logger;
 
 public class PeerManager {
 
     private static Logger LOG = Logger.getLogger(PeerManager.class.getName());
-
-    public static final String OPERATION_LOCAL_PEERS = "LOCAL_PEERS";
-
-    public static final String OPERATION_LOCAL_PEER_BY_NETWORK = "LOCAL_PEER_BY_NETWORK";
-    public static final String OPERATION_NUMBER_PEERS_BY_NETWORK = "NUMBER_PEERS_BY_NETWORK";
-    public static final String OPERATION_RANDOM_PEER_BY_NETWORK = "RANDOM_PEER_BY_NETWORK";
-    public static final String OPERATION_RANDOM_PEERS_BY_NETWORK = "RANDOM_PEERS_BY_NETWORK";
-
-    // Sent by each Network Service
-    public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
 
     private PeerDB peerDB;
     private PeerRelationshipsDB relDB;
@@ -38,6 +18,10 @@ public class PeerManager {
 
     public PeerManager() {
 
+    }
+
+    public List<NetworkPeer> getPeersByService(String serviceName) {
+        return peerDB.findPeersByService(serviceName);
     }
 
     public boolean init(String baseUrl, Properties p) {

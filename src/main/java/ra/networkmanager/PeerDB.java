@@ -8,8 +8,7 @@ import ra.util.JSONParser;
 import ra.util.RandomUtil;
 
 import java.sql.*;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.logging.Logger;
 
 import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
@@ -43,6 +42,8 @@ class PeerDB {
     private final Object peerByAddressLock = new Object();
     private PreparedStatement peerByFingerprint;
     private final Object peerByFingerprintLock = new Object();
+    private PreparedStatement peersByService;
+    private final Object peersByServiceLock = new Object();
     private final Object peerInsertPSLock = new Object();
     private final Object peerUpdatePSLock = new Object();
 
@@ -59,7 +60,7 @@ class PeerDB {
         boolean update = false;
         ResultSet rs = null;
         LOG.info("Looking up Node by Id: "+p.getId()+" and Network: "+p.getNetwork());
-        synchronized (peerByIdAndNetwork) {
+        synchronized (peerByIdAndNetworkLock) {
             try {
                 peerByIdAndNetwork.clearParameters();
                 peerByIdAndNetwork.setString(1, p.getId());
@@ -97,6 +98,11 @@ class PeerDB {
                 sb.append(", keyType='"+p.getDid().getPublicKey().getType()+"'");
             if(p.getPort()!=null)
                 sb.append(", port="+p.getPort());
+            if(p.getServices()!=null) {
+                StringJoiner joiner = new StringJoiner("|");
+                p.getServices().forEach(joiner::add);
+                sb.append(", services=" +joiner);
+            }
             if(p.getDid().getPublicKey().getAttributes()!=null && p.getDid().getPublicKey().getAttributes().size()>0)
                 sb.append(", attributes='"+ JSONParser.toString(p.getDid().getPublicKey().getAttributes())+"'");
             sb.append(" where id='"+p.getId()+"' and network='"+p.getNetwork()+"'");
@@ -130,6 +136,8 @@ class PeerDB {
                 sb.append(", keyType");
             if(p.getPort()!=null)
                 sb.append(", port");
+            if(p.getServices()!=null)
+                sb.append(", services");
             if(p.getDid().getPublicKey().getAttributes()!=null && p.getDid().getPublicKey().getAttributes().size()>0)
                 sb.append(", attributes");
             sb.append(") values ('"+p.getId()+"', '"+p.getNetwork()+"'");
@@ -145,6 +153,11 @@ class PeerDB {
                 sb.append(", '"+p.getDid().getPublicKey().getType()+"'");
             if(p.getPort()!=null)
                 sb.append(", "+p.getPort());
+            if(p.getServices()!=null) {
+                StringJoiner joiner = new StringJoiner("|");
+                p.getServices().forEach(joiner::add);
+                sb.append(", "+joiner);
+            }
             if(p.getDid().getPublicKey().getAttributes()!=null && p.getDid().getPublicKey().getAttributes().size()>0)
                 sb.append(", '"+JSONParser.toString(p.getDid().getPublicKey().getAttributes())+"'");
             sb.append(")");
@@ -282,6 +295,10 @@ class PeerDB {
                     p.getDid().getPublicKey().setAddress(rs.getString(NetworkPeer.ADDRESS));
                     p.getDid().getPublicKey().setFingerprint(rs.getString(NetworkPeer.FINGERPRINT));
                     p.getDid().getPublicKey().setType(rs.getString(NetworkPeer.KEY_TYPE));
+                    String servicesStr = rs.getString(NetworkPeer.SERVICES);
+                    if(servicesStr!=null) {
+                        p.setServices(Arrays.asList(servicesStr.split("|")));
+                    }
                 }
             } catch (SQLException e) {
                 LOG.warning(e.getLocalizedMessage());
@@ -314,6 +331,10 @@ class PeerDB {
                     p.getDid().getPublicKey().setFingerprint(rs.getString(NetworkPeer.FINGERPRINT));
                     p.getDid().getPublicKey().setType(rs.getString(NetworkPeer.KEY_TYPE));
                     p.setPort(rs.getInt(NetworkPeer.PORT));
+                    String servicesStr = rs.getString(NetworkPeer.SERVICES);
+                    if(servicesStr!=null) {
+                        p.setServices(Arrays.asList(servicesStr.split("|")));
+                    }
                 }
             } catch (Exception e) {
                 LOG.warning(e.getLocalizedMessage());
@@ -328,6 +349,44 @@ class PeerDB {
             }
         }
         return p;
+    }
+
+    public List<NetworkPeer> findPeersByService(String serviceName) {
+        List<NetworkPeer> networkPeers = new ArrayList<>();
+        NetworkPeer p = null;
+        ResultSet rs = null;
+        synchronized (peersByService) {
+            try {
+                peersByService.clearParameters();
+                peersByService.setString(1, "%"+serviceName+"%");
+                rs = peersByService.executeQuery();
+                while(rs.next()) {
+                    p = new NetworkPeer(Network.valueOf(rs.getString(NetworkPeer.NETWORK)));
+                    p.setId(rs.getString(NetworkPeer.ID));
+                    p.getDid().setUsername(rs.getString(NetworkPeer.USERNAME));
+                    p.getDid().getPublicKey().setAlias(rs.getString(NetworkPeer.ALIAS));
+                    p.getDid().getPublicKey().setAddress(rs.getString(NetworkPeer.ADDRESS));
+                    p.getDid().getPublicKey().setFingerprint(rs.getString(NetworkPeer.FINGERPRINT));
+                    p.getDid().getPublicKey().setType(rs.getString(NetworkPeer.KEY_TYPE));
+                    p.setPort(rs.getInt(NetworkPeer.PORT));
+                    String servicesStr = rs.getString(NetworkPeer.SERVICES);
+                    if(servicesStr!=null) {
+                        p.setServices(Arrays.asList(servicesStr.split("|")));
+                    }
+                }
+            } catch (Exception e) {
+                LOG.warning(e.getLocalizedMessage());
+            } finally {
+                if (rs != null) {
+                    try {
+                        rs.close();
+                    } catch (SQLException e) {
+                        LOG.warning(e.getLocalizedMessage());
+                    }
+                }
+            }
+        }
+        return networkPeers;
     }
 
     public String getLocation() {
@@ -378,7 +437,17 @@ class PeerDB {
             Statement stmt = null;
             try {
                stmt = connection.createStatement();
-                stmt.execute("create table peer (id varchar(256) not null, network varchar(16) not null, username varchar(32), alias varchar(32), address varchar(4096), fingerprint varchar(256), keyType varchar(32), port int, attributes varchar(4096)) ");
+                stmt.execute("create table peer (" +
+                        "id varchar(256) not null, " +
+                        "network varchar(16) not null, " +
+                        "username varchar(32), " +
+                        "alias varchar(32), " +
+                        "address varchar(4096), " +
+                        "fingerprint varchar(256), " +
+                        "keyType varchar(32), " +
+                        "port int, " +
+                        "services varchar(4096), " +
+                        "attributes varchar(4096)) ");
             } catch (SQLException e) {
                 String eMsg = e.getLocalizedMessage();
                 if(!"Table/View 'PEER' already exists in Schema 'APP'.".equals(eMsg)) {
@@ -401,6 +470,7 @@ class PeerDB {
                 peerByIdAndNetwork = connection.prepareStatement("select * from Peer where id=? and network=?");
                 peerByFingerprint = connection.prepareStatement("select * from Peer where fingerprint=?");
                 peerByAddress = connection.prepareStatement("select * from Peer where address=?");
+                peersByService = connection.prepareStatement("select * from Peer where services like ?");
                 initialized = true;
             } catch (SQLException e) {
                 LOG.warning(e.getLocalizedMessage());

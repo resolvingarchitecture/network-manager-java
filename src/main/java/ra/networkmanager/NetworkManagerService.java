@@ -3,12 +3,10 @@ package ra.networkmanager;
 import ra.common.Envelope;
 import ra.common.messaging.EventMessage;
 import ra.common.messaging.MessageProducer;
-import ra.common.network.Network;
-import ra.common.network.NetworkService;
-import ra.common.network.NetworkState;
-import ra.common.network.NetworkStatus;
+import ra.common.network.*;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
+import ra.common.service.Service;
 import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusObserver;
 import ra.util.Config;
@@ -32,19 +30,28 @@ public class NetworkManagerService extends BaseService {
 
     private static final Logger LOG = Logger.getLogger(NetworkManagerService.class.getName());
 
+    // *** Network Management ***
     // Used by other services to delegate sending messages allowing the Network Manager to determine which network to
-    // use if no External Route is present. If an External Route is present, the Network Manager will simply use it.
+    // use if no External Route is present. If an External Route is present, the Network Manager will simply use it if available.
+    // If not available, it will hold the message until it is available then send.
     public static final String OPERATION_SEND = "SEND";
     // Sent by Network Services to update the Network Manager on state changes.
     public static final String OPERATION_UPDATE_NETWORK_STATE = "UPDATE_NETWORK_STATE";
-    // Sent by End Users to update the Network Manager on their situation.
-    public static final String OPERATION_UPDATE_SITUATIONAL_STATE = "UPDATE_SITUATIONAL_STATE";
-    // Sent by Press Freedom Index Scraper and/or other services evaluating global state.
-    public static final String OPERATION_UPDATE_GLOBAL_STATE = "UPDATE_GLOBAL_STATE";
     // Returns a list of the current Networks States
     public static final String OPERATION_LOCAL_NETWORKS = "LOCAL_NETWORKS";
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
+
+    // *** Peer Management ***
+    public static final String OPERATION_LOCAL_PEERS = "LOCAL_PEERS";
+    public static final String OPERATION_LOCAL_PEER_BY_NETWORK = "LOCAL_PEER_BY_NETWORK";
+    public static final String OPERATION_NUMBER_PEERS_BY_NETWORK = "NUMBER_PEERS_BY_NETWORK";
+    public static final String OPERATION_RANDOM_PEER_BY_NETWORK = "RANDOM_PEER_BY_NETWORK";
+    public static final String OPERATION_RANDOM_PEERS_BY_NETWORK = "RANDOM_PEERS_BY_NETWORK";
+    public static final String OPERATION_PEERS_BY_SERVICE = "PEERS_BY_SERVICE";
+
+    // Sent by each Network Service
+    public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
 
     protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
@@ -89,14 +96,6 @@ public class NetworkManagerService extends BaseService {
             case OPERATION_SEND: {
                 send(envelope);break;
             }
-            case OPERATION_UPDATE_SITUATIONAL_STATE: {
-
-                break;
-            }
-            case OPERATION_UPDATE_GLOBAL_STATE: {
-
-                break;
-            }
             case OPERATION_LOCAL_NETWORKS: {
                 List<String> networks = new ArrayList<>();
                 for(NetworkState ns : networkStates.values()) {
@@ -114,6 +113,9 @@ public class NetworkManagerService extends BaseService {
                 }
                 envelope.addContent(networks);
                 break;
+            }
+            case OPERATION_PEERS_BY_SERVICE: {
+                envelope.addNVP(NetworkPeer.class.getName(), peerManager.getPeersByService((String)envelope.getValue(Service.class.getName())));
             }
             default: {deadLetter(envelope);break;}
         }
