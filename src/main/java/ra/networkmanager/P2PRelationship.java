@@ -1,6 +1,5 @@
 package ra.networkmanager;
 
-import org.neo4j.graphdb.RelationshipType;
 import ra.common.JSONSerializable;
 import ra.util.JSONParser;
 import ra.util.JSONPretty;
@@ -22,7 +21,7 @@ class P2PRelationship implements JSONSerializable {
     /**
      * Relationship Type is based on what Network was used to establish it.
      */
-    public enum RelType implements RelationshipType {
+    public enum RelType {
         HTTP,
         TOR,
         I2P,

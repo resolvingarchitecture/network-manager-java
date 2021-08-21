@@ -12,7 +12,6 @@ public class PeerManager {
     private static Logger LOG = Logger.getLogger(PeerManager.class.getName());
 
     private PeerDB peerDB;
-    private PeerRelationshipsDB relDB;
 
     private TaskRunner taskRunner;
 
@@ -30,11 +29,7 @@ public class PeerManager {
         peerDB.setLocation(baseUrl);
         peerDB.setName("peerDB");
 
-        relDB = new PeerRelationshipsDB();
-        relDB.setLocation(baseUrl);
-        relDB.setName("peerGraph");
-
-        if(!peerDB.init(p) || !relDB.init(p)) {
+        if(!peerDB.init(p)) {
             LOG.severe("DB initialization failed.");
             return false;
         }
@@ -43,7 +38,7 @@ public class PeerManager {
     }
 
     public boolean teardown() {
-        return peerDB.teardown() && relDB.teardown();
+        return peerDB.teardown();
     }
 
 }

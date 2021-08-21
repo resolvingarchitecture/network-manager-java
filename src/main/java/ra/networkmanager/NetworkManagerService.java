@@ -90,18 +90,34 @@ public class NetworkManagerService extends BaseService {
     }
 
     @Override
-    public void handleDocument(Envelope envelope) {
-        Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
+    public void handleDocument(Envelope e) {
+        Route r = e.getDynamicRoutingSlip().getCurrentRoute();
         switch(r.getOperation()) {
             case OPERATION_SEND: {
-                send(envelope);break;
+                if(e.getRoute()!=null && "ra.notification.NotificationService".equals(e.getRoute().getService())) {
+                    // This is a notification from this service
+                    producer.send(e);
+                    break;
+                }
+                Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
+                String nextService = nextRoute.getService().toLowerCase();
+                Network nextNetwork = getNetworkFromService(nextService);
+                if(nextNetwork!=null) {
+                    NetworkState networkState = networkStates.get(nextNetwork.name());
+                    if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
+                        sendToMessageHold(e);
+                        break;
+                    }
+                }
+                producer.send(e);
+                break;
             }
             case OPERATION_LOCAL_NETWORKS: {
                 List<String> networks = new ArrayList<>();
                 for(NetworkState ns : networkStates.values()) {
                     networks.add(ns.network.name());
                 }
-                envelope.addContent(networks);
+                e.addContent(networks);
                 break;
             }
             case OPERATION_ACTIVE_NETWORKS: {
@@ -111,13 +127,13 @@ public class NetworkManagerService extends BaseService {
                         networks.add(ns.network.name());
                     }
                 }
-                envelope.addContent(networks);
+                e.addContent(networks);
                 break;
             }
             case OPERATION_PEERS_BY_SERVICE: {
-                envelope.addNVP(NetworkPeer.class.getName(), peerManager.getPeersByService((String)envelope.getValue(Service.class.getName())));
+                e.addNVP(NetworkPeer.class.getName(), peerManager.getPeersByService((String)e.getValue(Service.class.getName())));
             }
-            default: {deadLetter(envelope);break;}
+            default: {deadLetter(e);break;}
         }
     }
 
@@ -245,24 +261,6 @@ public class NetworkManagerService extends BaseService {
         }
     }
 
-    @Override
-    public boolean send(Envelope e) {
-        if(e.getRoute()!=null && "ra.notification.NotificationService".equals(e.getRoute().getService())) {
-            // This is a notification from this service
-            return producer.send(e);
-        }
-        Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
-        String service = r.getService().toLowerCase();
-        Network network = getNetworkFromService(service);
-        if(network!=null) {
-            NetworkState networkState = networkStates.get(network.name());
-            if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
-                return sendToMessageHold(e);
-            }
-        }
-        return producer.send(e);
-    }
-
     protected boolean sendToMessageHold(Envelope e) {
         File envFile = new File(messageHold, e.getId());
         try {
@@ -327,7 +325,8 @@ public class NetworkManagerService extends BaseService {
     @Override
     public boolean restart() {
         LOG.info("Restarting...");
-
+        gracefulShutdown();
+        start(config);
         LOG.info("Restarted.");
         return true;
     }

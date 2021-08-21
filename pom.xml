@@ -5,7 +5,7 @@
 
     <groupId>resolvingarchitecture</groupId>
 	<artifactId>network-manager</artifactId>
-	<version>1.0.8</version>
+	<version>1.0.9</version>
 
 	<packaging>jar</packaging>
 
@@ -44,17 +44,6 @@
 			<groupId>org.apache.derby</groupId>
 			<artifactId>derby</artifactId>
 			<version>10.14.2.0</version>
-		</dependency>
-		<!-- Neo4j DB -->
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j</artifactId>
-			<version>3.5.14</version>
-		</dependency>
-		<dependency>
-			<groupId>org.neo4j</groupId>
-			<artifactId>neo4j-cypher</artifactId>
-			<version>3.5.14</version>
 		</dependency>
 
 		<!-- Test -->
