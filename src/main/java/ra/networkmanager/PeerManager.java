@@ -1,7 +1,7 @@
 package ra.networkmanager;
 
 import ra.common.network.NetworkPeer;
-import ra.util.tasks.TaskRunner;
+import ra.common.tasks.TaskRunner;
 
 import java.util.List;
 import java.util.Properties;

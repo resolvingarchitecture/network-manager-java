@@ -4,8 +4,8 @@ import ra.common.identity.DID;
 import ra.common.network.Network;
 import ra.common.network.NetworkNode;
 import ra.common.network.NetworkPeer;
-import ra.util.JSONParser;
-import ra.util.RandomUtil;
+import ra.common.JSONParser;
+import ra.common.RandomUtil;
 
 import java.sql.*;
 import java.util.*;
