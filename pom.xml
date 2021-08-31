@@ -5,7 +5,7 @@
 
     <groupId>resolvingarchitecture</groupId>
 	<artifactId>network-manager</artifactId>
-	<version>1.1.0</version>
+	<version>1.2.0</version>
 
 	<packaging>jar</packaging>
 
@@ -38,12 +38,6 @@
 			<groupId>resolvingarchitecture</groupId>
 			<artifactId>common</artifactId>
 			<version>1.1.0</version>
-		</dependency>
-		<!-- Derby DB -->
-		<dependency>
-			<groupId>org.apache.derby</groupId>
-			<artifactId>derby</artifactId>
-			<version>10.14.2.0</version>
 		</dependency>
 
 		<!-- Test -->
