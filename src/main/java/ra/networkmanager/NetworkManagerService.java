@@ -53,26 +53,29 @@ public class NetworkManagerService extends BaseService {
     // Sent by each Network Service
     public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
 
+    // Discover overlay network
+    public static final String OPERATION_DISCOVER_OVERLAY = "DISCOVER_OVERLAY";
+
     protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
     protected TaskRunner taskRunner;
-    protected PeerManager peerManager;
+    protected PeerDB peerDB;
 
     public NetworkManagerService() {
         super();
         taskRunner = new TaskRunner(1,1);
-        peerManager = new PeerManager();
+        peerDB = new PeerDB();
     }
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
         taskRunner = new TaskRunner(1,1);
-        peerManager = new PeerManager();
+        peerDB = new PeerDB();
     }
 
-    public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer, PeerManager peerManager) {
+    public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer, PeerDB peerDB) {
         super(producer, observer);
-        this.peerManager = peerManager;
+        this.peerDB = peerDB;
         taskRunner = new TaskRunner(1,1);
     }
 
@@ -131,18 +134,18 @@ public class NetworkManagerService extends BaseService {
                 break;
             }
             case OPERATION_PEERS_BY_SERVICE: {
-                e.addNVP(NetworkPeer.class.getName(), peerManager.getPeersByService((String)e.getValue(Service.class.getName())));
+                e.addNVP(NetworkPeer.class.getName(), peerDB.findPeersByService((String)e.getValue(Service.class.getName())));
             }
             default: {deadLetter(e);break;}
         }
     }
 
-    protected void updateNetworkState(Envelope envelope) {
-        if(!(envelope.getMessage() instanceof EventMessage)) {
+    protected void updateNetworkState(Envelope e) {
+        if(!(e.getMessage() instanceof EventMessage)) {
             LOG.warning("Network State must be within an Event Message.");
             return;
         }
-        EventMessage em = (EventMessage)envelope.getMessage();
+        EventMessage em = (EventMessage)e.getMessage();
         NetworkState networkState = (NetworkState)em.getMessage();
         networkStates.put(networkState.network.name(), networkState);
         switch (networkState.networkStatus) {
@@ -195,9 +198,8 @@ public class NetworkManagerService extends BaseService {
             }
         }
         // Send on to subscribers
-        envelope.addRoute("ra.notification.NotificationService","PUBLISH");
-        envelope.ratchet();
-        producer.send(envelope);
+        e.addRoute("ra.notification.NotificationService","PUBLISH");
+        producer.send(e);
     }
 
     public boolean isNetworkReady(Network network) {
@@ -251,7 +253,7 @@ public class NetworkManagerService extends BaseService {
     protected String networkService(Network network) {
         switch (network) {
             case Tor: return "ra.tor.TORClientService";
-            case I2P: return "ra.i2p.I2PService";
+            case I2P: return "ra.i2p.I2PEmbeddedService";
             case Bluetooth: return "ra.bluetooth.BluetoothService";
             case WiFi: return "ra.wifi.WiFiService";
             case Satellite: return "ra.satellite.SatelliteService";
@@ -277,8 +279,8 @@ public class NetworkManagerService extends BaseService {
         return true;
     }
 
-    Collection<NetworkState> getNetworkStates() {
-        return networkStates.values();
+    List<NetworkState> getNetworkStates() {
+        return new ArrayList<>(networkStates.values());
     }
 
     @Override
@@ -304,7 +306,7 @@ public class NetworkManagerService extends BaseService {
         task.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(task);
 
-        peerManager.init(getServiceDirectory().getAbsolutePath(), config);
+        peerDB.init(config);
 
         updateStatus(ServiceStatus.RUNNING);
         return true;

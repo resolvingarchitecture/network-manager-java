@@ -1,26 +1,18 @@
 package ra.networkmanager;
 
-import ra.common.identity.DID;
 import ra.common.network.Network;
-import ra.common.network.NetworkNode;
 import ra.common.network.NetworkPeer;
-import ra.common.JSONParser;
 import ra.common.RandomUtil;
 
 import java.util.*;
 import java.util.logging.Logger;
 
-import static java.sql.ResultSet.TYPE_SCROLL_INSENSITIVE;
-
-class PeerDB {
+public class PeerDB {
 
     private static final Logger LOG = Logger.getLogger(PeerDB.class.getName());
 
-    private boolean initialized = false;
-    private String location;
     private String name;
     private Properties properties;
-    private String dbURL;
 
     private Map<String,NetworkPeer> peerById = new HashMap<>();
     private Map<String,NetworkPeer> peerByAddress = new HashMap<>();
@@ -64,14 +56,6 @@ class PeerDB {
         return networkPeers;
     }
 
-    public String getLocation() {
-        return location;
-    }
-
-    public void setLocation(String location) {
-        this.location = location;
-    }
-
     public String getName() {
         return name;
     }
@@ -81,25 +65,12 @@ class PeerDB {
     }
 
     public boolean init(Properties p) {
-        if(location==null) {
-            LOG.warning("Derby DB location required. Please provide.");
-            return false;
-        }
-        if(name==null) {
-            LOG.warning("Derby DB name required. Please provide.");
-            return false;
-        }
-        if(!initialized) {
-            this.properties = p;
-
-        }
-        return initialized;
+        this.properties = p;
+        return true;
     }
 
     public boolean teardown() {
-        LOG.info("Stopping...");
 
-        LOG.info("Stopped.");
         return true;
     }
 
