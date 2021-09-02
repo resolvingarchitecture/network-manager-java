@@ -57,6 +57,6 @@ public class DelayedSend extends BaseTask {
                 }
             }
         }
-        return null;
+        return true;
     }
 }

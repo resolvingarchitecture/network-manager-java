@@ -43,6 +43,7 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
 
     // *** Peer Management ***
+    public static final String OPERATION_ADD_SEED_PEER = "ADD_SEED_PEER";
     public static final String OPERATION_LOCAL_PEERS = "LOCAL_PEERS";
     public static final String OPERATION_LOCAL_PEER_BY_NETWORK = "LOCAL_PEER_BY_NETWORK";
     public static final String OPERATION_NUMBER_PEERS_BY_NETWORK = "NUMBER_PEERS_BY_NETWORK";
@@ -115,6 +116,13 @@ public class NetworkManagerService extends BaseService {
                 producer.send(e);
                 break;
             }
+            case OPERATION_ADD_SEED_PEER: {
+                Object obj = e.getValue(NetworkPeer.class.getName()+":Seed");
+                if(obj instanceof NetworkPeer) {
+                    peerDB.addSeed((NetworkPeer) obj);
+                }
+                break;
+            }
             case OPERATION_LOCAL_NETWORKS: {
                 List<String> networks = new ArrayList<>();
                 for(NetworkState ns : networkStates.values()) {
@@ -135,6 +143,16 @@ public class NetworkManagerService extends BaseService {
             }
             case OPERATION_PEERS_BY_SERVICE: {
                 e.addNVP(NetworkPeer.class.getName(), peerDB.findPeersByService((String)e.getValue(Service.class.getName())));
+                break;
+            }
+            case OPERATION_UPDATE_PEER: {
+                if(e.getValue(NetworkPeer.class.getName())!=null) {
+                    Object obj = e.getValue(NetworkPeer.class.getName());
+                    if(obj instanceof NetworkPeer) {
+                        peerDB.savePeer((NetworkPeer)obj);
+                    }
+                }
+                break;
             }
             default: {deadLetter(e);break;}
         }
@@ -300,11 +318,15 @@ public class NetworkManagerService extends BaseService {
             LOG.severe("Unable to create message hold directory.");
             return false;
         }
-        DelayedSend task = new DelayedSend(this, taskRunner, messageHold);
-        task.setDelayed(true);
-        task.setDelayTimeMS(5000L);
-        task.setPeriodicity(60 * 1000L); // Check every minute
-        taskRunner.addTask(task);
+        DelayedSend del = new DelayedSend(this, taskRunner, messageHold);
+        del.setDelayed(true);
+        del.setDelayTimeMS(5000L);
+        del.setPeriodicity(60 * 1000L); // Check every minute
+        taskRunner.addTask(del);
+        NetworkOverlayDiscovery overlay = new NetworkOverlayDiscovery(taskRunner, this, peerDB);
+        overlay.setDelayed(false);
+        overlay.setPeriodicity(30 * 1000L); // Check every 30 seconds
+        taskRunner.addTask(overlay);
 
         peerDB.init(config);
 
