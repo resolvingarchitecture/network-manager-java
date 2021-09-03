@@ -1,6 +1,9 @@
 package ra.networkmanager;
 
 import ra.common.Envelope;
+import ra.common.messaging.CommandMessage;
+import ra.common.network.NetworkPeer;
+import ra.common.network.NetworkService;
 import ra.common.network.NetworkState;
 import ra.common.network.NetworkStatus;
 import ra.common.tasks.BaseTask;
@@ -30,6 +33,20 @@ public class NetworkOverlayDiscovery extends BaseTask {
                 if(peerDB.numberPeersByNetwork(ns.network) == 0 && peerDB.numberSeedPeersByNetwork(ns.network) > 0) {
                     // Instruct Network Service to begin with provided seed
                     Envelope e = Envelope.documentFactory();
+                    NetworkPeer orig = peerDB.getLocalPeerByNetwork(ns.network);
+                    NetworkPeer dest = peerDB.getRandomSeedByNetwork(ns.network);
+                    // 3. Return results to this service
+                    e.addExternalRoute(NetworkManagerService.class.getName(),
+                            NetworkManagerService.OPERATION_PEER_STATUS_REPLY,
+                            dest,
+                            orig);
+                    // 2. Send directly to remote specific Network Service in Peer as may not have Network Manager Service in use
+                    e.addExternalRoute(service.getNetworkServiceFromNetwork(ns.network),
+                            NetworkService.OPERATION_PEER_STATUS,
+                            orig,
+                            dest);
+                    // 1. Send to local specific Network Service requesting to send on this request.
+                    e.addRoute(service.getNetworkServiceFromNetwork(ns.network),"SEND");
                     LOG.warning("Network Overlay Discovery not yet implemented.");
                 }
             }

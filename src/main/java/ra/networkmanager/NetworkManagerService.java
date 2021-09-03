@@ -56,6 +56,8 @@ public class NetworkManagerService extends BaseService {
 
     // Discover overlay network
     public static final String OPERATION_DISCOVER_OVERLAY = "DISCOVER_OVERLAY";
+    public static final String OPERATION_PEER_STATUS = "PEER_STATUS";
+    public static final String OPERATION_PEER_STATUS_REPLY = "PEER_STATUS_REPLY";
 
     protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
@@ -253,13 +255,12 @@ public class NetworkManagerService extends BaseService {
         Object obj = null;
         try {
             obj = Class.forName(service).getConstructor().newInstance();
+            if(obj instanceof NetworkService) {
+                NetworkService ns = (NetworkService)obj;
+                return ns.getNetworkState().network;
+            }
         } catch (Exception e) {
             LOG.warning(e.getLocalizedMessage());
-            return null;
-        }
-        if(obj instanceof NetworkService) {
-            NetworkService ns = (NetworkService)obj;
-            return ns.getNetworkState().network;
         }
         return null;
     }
@@ -268,7 +269,7 @@ public class NetworkManagerService extends BaseService {
         return networkStates.get(network.name()).networkStatus;
     }
 
-    protected String networkService(Network network) {
+    protected String getNetworkServiceFromNetwork(Network network) {
         switch (network) {
             case Tor: return "ra.tor.TORClientService";
             case I2P: return "ra.i2p.I2PEmbeddedService";

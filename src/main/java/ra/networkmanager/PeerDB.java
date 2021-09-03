@@ -14,6 +14,7 @@ public class PeerDB {
     private Properties properties;
     private Integer maxPeersByNetwork = 1000; // Default in code to one thousand
 
+    private Map<Network,NetworkPeer> localPeerByNetwork = new HashMap<>();
     private Map<Network,Set<NetworkPeer>> seedPeersByNetwork = new HashMap<>();
 
     private Map<String,NetworkPeer> peerById = new HashMap<>();
@@ -57,6 +58,15 @@ public class PeerDB {
     public int numberSeedPeersByNetwork(Network network) {
         if(seedPeersByNetwork.get(network)==null || seedPeersByNetwork.get(network).isEmpty()) return 0;
         return seedPeersByNetwork.get(network).size();
+    }
+
+    public NetworkPeer getLocalPeerByNetwork(Network network) {
+        return localPeerByNetwork.get(network);
+    }
+
+    public NetworkPeer getRandomSeedByNetwork(Network network) {
+        int random = RandomUtil.nextRandomInteger(0, seedPeersByNetwork.get(network).size());
+        return (NetworkPeer)seedPeersByNetwork.values().toArray()[random];
     }
 
     public NetworkPeer randomPeer(NetworkPeer fromPeer) {
