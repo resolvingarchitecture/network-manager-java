@@ -11,6 +11,7 @@ import ra.common.tasks.TaskRunner;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Logger;
 
@@ -42,6 +43,12 @@ public class DelayedSend extends BaseTask {
             String json = new String(bytes);
             Envelope e = Envelope.documentFactory();
             e.fromJSON(json);
+            if(e.getValue("delay")!=null) {
+                long delay = Long.parseLong((String)e.getValue("delay"));
+                if(new Date().getTime() < delay) {
+                    continue; // Not ready yet
+                }
+            }
             Route r = e.getDynamicRoutingSlip().peekAtNextRoute();
             String serviceName = r.getService();
             for(NetworkState ns : networkStates) {
