@@ -47,6 +47,7 @@ public class NetworkOverlayDiscovery extends BaseTask {
                             dest);
                     // 1. Send to local specific Network Service requesting to send on this request.
                     e.addRoute(service.getNetworkServiceFromNetwork(ns.network),"SEND");
+                    service.send(e);
                     LOG.warning("Network Overlay Discovery not yet implemented.");
                 }
             }
