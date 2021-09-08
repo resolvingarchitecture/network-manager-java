@@ -29,6 +29,19 @@ class P2PRelationship implements JSONSerializable {
     }
 
     private Map<String, List<Long>> acksByPeer = new HashMap<>();
+    private transient Map<String, Long> startTimes = new HashMap<>();
+
+    public void startAck(String peerId, Long start) {
+        startTimes.put(peerId, start);
+    }
+
+    public Long getStart(String peerId) {
+        return startTimes.get(peerId);
+    }
+
+    public void clearStart(String peerId) {
+        startTimes.remove(peerId);
+    }
 
     public void addAck(String peerId, Long ack) {
         List<Long> acks = acksByPeer.get(peerId);

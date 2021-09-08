@@ -4,6 +4,7 @@ import ra.common.Envelope;
 import ra.common.messaging.EventMessage;
 import ra.common.messaging.MessageProducer;
 import ra.common.network.*;
+import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
 import ra.common.service.BaseService;
 import ra.common.service.Service;
@@ -63,6 +64,7 @@ public class NetworkManagerService extends BaseService {
     protected File messageHold;
     protected TaskRunner taskRunner;
     protected PeerDB peerDB;
+    protected P2PRelationship p2PRelationship;
 
     public NetworkManagerService() {
         super();
@@ -155,6 +157,15 @@ public class NetworkManagerService extends BaseService {
                     }
                 }
                 break;
+            }
+            case OPERATION_PEER_STATUS_REPLY: {
+                Route route = e.getRoute();
+                if(route instanceof ExternalRoute) {
+                   ExternalRoute extRoute = (ExternalRoute) route;
+                   NetworkPeer orig = extRoute.getOrigination();
+                   LOG.info("Adding ack...");
+                   p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
+                }
             }
             default: {deadLetter(e);break;}
         }
@@ -324,7 +335,7 @@ public class NetworkManagerService extends BaseService {
         del.setDelayTimeMS(5000L);
         del.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(del);
-        NetworkOverlayDiscovery overlay = new NetworkOverlayDiscovery(taskRunner, this, peerDB);
+        NetworkOverlayDiscovery overlay = new NetworkOverlayDiscovery(taskRunner, this, peerDB, p2PRelationship);
         overlay.setDelayed(false);
         overlay.setPeriodicity(30 * 1000L); // Check every 30 seconds
         taskRunner.addTask(overlay);

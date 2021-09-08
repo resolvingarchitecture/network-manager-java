@@ -69,11 +69,9 @@ public class PeerDB {
         return (NetworkPeer)seedPeersByNetwork.values().toArray()[random];
     }
 
-    public NetworkPeer randomPeer(NetworkPeer fromPeer) {
-        if(fromPeer==null || fromPeer.getNetwork()==null || peersByNetwork.get(fromPeer.getNetwork())==null) return null;
-
-        int random = RandomUtil.nextRandomInteger(0, peersByNetwork.get(fromPeer.getNetwork()).size());
-        return ((NetworkPeer[])peersByNetwork.get(fromPeer.getNetwork()).toArray())[random];
+    public NetworkPeer getRandomPeerByNetwork(Network network) {
+        int random = RandomUtil.nextRandomInteger(0, peersByNetwork.get(network).size());
+        return (NetworkPeer)peersByNetwork.values().toArray()[random];
     }
 
     public Set<NetworkPeer> findPeersByService(String serviceName) {
