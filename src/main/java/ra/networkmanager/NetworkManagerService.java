@@ -163,6 +163,7 @@ public class NetworkManagerService extends BaseService {
                 if(route instanceof ExternalRoute) {
                    ExternalRoute extRoute = (ExternalRoute) route;
                    NetworkPeer orig = extRoute.getOrigination();
+                   peerDB.savePeer(orig);
                    LOG.info("Adding ack...");
                    p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
                 }
