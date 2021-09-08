@@ -4,19 +4,14 @@ import ra.common.JSONSerializable;
 import ra.common.JSONParser;
 import ra.common.JSONPretty;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Relationships among Network Peers.
  */
 class P2PRelationship implements JSONSerializable {
 
-    public static final String TOTAL_ACKS = "totalAcks";
-    public static final String LAST_ACK_TIME = "lastAckTime";
-    public static final String AVG_ACK_LATENCY_MS = "avgAckLatencyMS";
-    public static final String MEDIAN_ACK_LATENCY_MS = "medAckLatencyMS";
+    public static final String ACKS_BY_PEER = "ACKS_BY_PEER";
 
     /**
      * Relationship Type is based on what Network was used to establish it.
@@ -33,82 +28,71 @@ class P2PRelationship implements JSONSerializable {
         IMS
     }
 
-    private Long totalAcks = 0L;
-    private Long lastAckTime = 0L;
-    private LinkedList<Long> ackTimesTracked = new LinkedList<>();
+    private Map<String, List<Long>> acksByPeer = new HashMap<>();
 
-    public void setTotalAcks(long totalAcks) {
-        this.totalAcks = totalAcks;
-    }
-
-    public Long getTotalAcks() {
-        return totalAcks;
-    }
-
-    public void addAckTimeTracked(long t, int maxAcksTracked) {
-        if(t <= 0) return; // not an ack
-        ackTimesTracked.add(t);
-        while(ackTimesTracked.size() > maxAcksTracked) {
-            ackTimesTracked.removeFirst();
+    public void addAck(String peerId, Long ack) {
+        List<Long> acks = acksByPeer.get(peerId);
+        if(acks==null) {
+            acks = new LinkedList<>();
+            acksByPeer.put(peerId, acks);
         }
-        totalAcks++;
+        acks.add(ack);
     }
 
-    public void setAckTimesTracked(String trackedFlattened) {
-        String[] tracked = trackedFlattened.split(",");
-        for(String time : tracked) {
-            ackTimesTracked.add(Long.parseLong(time));
+    public Integer getTotalAcks(String peerId) {
+        List<Long> acks = acksByPeer.get(peerId);
+        if(acks==null) {
+            acks = new LinkedList<>();
+            acksByPeer.put(peerId, acks);
         }
+        return acks.size();
     }
 
-    public String getAckTimesTracked() {
-        StringBuilder sb = new StringBuilder();
-        for(Long time : ackTimesTracked) {
-            sb.append(time+",");
-        }
-        String trackedFlattened = sb.toString();
-        trackedFlattened = trackedFlattened.substring(0, trackedFlattened.length()-1);
-        return trackedFlattened;
-    }
-
-    public Long getAvgAckLatencyMS() {
+    public Long getAvgAckLatencyMS(String peerId) {
+        List<Long> acks = acksByPeer.get(peerId);
+        if(acks==null) return 0L;
         long sum = 0L;
-        for (long ts : ackTimesTracked) {
+        for (long ts : acks) {
             sum += ts;
         }
-        return sum / ackTimesTracked.size();
+        return sum / acks.size();
     }
 
-    public Long getMedAckLatencyMS() {
-        ackTimesTracked.sort((t1, t2) -> (int)(t1 - t2));
-        return ackTimesTracked.get(ackTimesTracked.size() / 2);
+    public Long getMedAckLatencyMS(String peerId) {
+        List<Long> acks = acksByPeer.get(peerId);
+        if(acks==null) return 0L;
+        acks.sort((t1, t2) -> (int)(t1 - t2));
+        return acks.get(acks.size() / 2);
     }
 
-    public void setLastAckTime(Long lastAckTime) {
-        this.lastAckTime = lastAckTime;
-    }
-    public Long getLastAckTime() {
-        return lastAckTime;
-    }
-
-    public Boolean isReliable() {
-        return totalAcks > 100
-                && getAvgAckLatencyMS() < 8000
-                && getMedAckLatencyMS() < 8000;
+    public Long getLastAckTime(String peerId) {
+        List<Long> acks = acksByPeer.get(peerId);
+        if(acks==null) {
+            acks = new LinkedList<>();
+            acksByPeer.put(peerId, acks);
+        }
+        if(acks.size()==0) return 0L;
+        return acks.get(acks.size()-1);
     }
 
-    public Boolean isSuperReliable() {
-        return totalAcks > 1000
-                && getAvgAckLatencyMS() < 4000
-                && getMedAckLatencyMS() < 4000;
+    public Boolean isReliable(String peerId) {
+        return getTotalAcks(peerId) > 100
+                && getAvgAckLatencyMS(peerId) < 8000
+                && getMedAckLatencyMS(peerId) < 8000;
     }
 
-    public Boolean isRealTime() {
-        return getAvgAckLatencyMS() < 1000 && getMedAckLatencyMS() < 1000;
+    public Boolean isSuperReliable(String peerId) {
+        return getTotalAcks(peerId) > 1000
+                && getAvgAckLatencyMS(peerId) < 4000
+                && getMedAckLatencyMS(peerId) < 4000;
     }
 
-    public Boolean belowMaxLatency(Long maxLatency) {
-        return getAvgAckLatencyMS() < maxLatency && getMedAckLatencyMS() < maxLatency;
+    public Boolean isRealTime(String peerId) {
+        return getAvgAckLatencyMS(peerId) < 1000 && getMedAckLatencyMS(peerId) < 1000;
+    }
+
+    public Boolean belowMaxLatency(String peerId, Long maxLatency) {
+        return getAvgAckLatencyMS(peerId) < maxLatency && getMedAckLatencyMS(peerId) < maxLatency;
     }
 
     public static RelType networkToRelationship(String network) {
@@ -127,22 +111,14 @@ class P2PRelationship implements JSONSerializable {
 
     public Map<String, Object> toMap() {
         Map<String, Object> m = new HashMap<>();
-        if(totalAcks !=null) m.put(TOTAL_ACKS, totalAcks);
-        m.put(AVG_ACK_LATENCY_MS, getAvgAckLatencyMS());
-        m.put(MEDIAN_ACK_LATENCY_MS, getMedAckLatencyMS());
-        if(lastAckTime!=null) m.put(LAST_ACK_TIME, lastAckTime);
-        if(ackTimesTracked !=null) m.put("ackTimesTracked", getAckTimesTracked());
+        if(acksByPeer !=null) m.put(ACKS_BY_PEER, acksByPeer);
         return m;
     }
 
     public void fromMap(Map<String, Object> m) {
         if(m!=null) {
-            if(m.get(TOTAL_ACKS)!=null)
-                totalAcks = (Long)m.get(TOTAL_ACKS);
-            if(m.get(LAST_ACK_TIME)!=null)
-                lastAckTime = (Long)m.get(LAST_ACK_TIME);
-            if(m.get("ackTimesTracked")!=null) {
-                setAckTimesTracked((String)m.get("ackTimesTracked"));
+            if(m.get(ACKS_BY_PEER)!=null) {
+                acksByPeer = (Map<String,List<Long>>) m.get(ACKS_BY_PEER);
             }
         }
     }
