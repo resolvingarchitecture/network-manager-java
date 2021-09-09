@@ -166,6 +166,15 @@ public class NetworkManagerService extends BaseService {
                    peerDB.savePeer(orig);
                    LOG.info("Adding ack...");
                    p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
+                   if(e.getValue("peers")!=null) {
+                       List<Map<String,Object>> peerMaps = (List<Map<String,Object>>)e.getValue("peers");
+                       for(Map<String,Object> peerMap : peerMaps) {
+                           Network network = Network.valueOf((String)peerMap.get("network"));
+                           NetworkPeer np = new NetworkPeer(network);
+                           np.fromMap(peerMap);
+                           peerDB.savePeer(np);
+                       }
+                   }
                 }
             }
             default: {deadLetter(e);break;}
