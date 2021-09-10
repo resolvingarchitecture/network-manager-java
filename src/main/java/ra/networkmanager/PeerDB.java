@@ -13,14 +13,15 @@ public class PeerDB {
 
     private Properties properties;
     private Integer maxPeersByNetwork = 1000; // Default in code to one thousand
+    private final Integer peersToShareInDiscovery = 8;
 
-    private Map<Network,NetworkPeer> localPeerByNetwork = new HashMap<>();
-    private Map<Network,Set<NetworkPeer>> seedPeersByNetwork = new HashMap<>();
+    private final Map<Network,NetworkPeer> localPeerByNetwork = new HashMap<>();
+    private final Map<Network,Set<NetworkPeer>> seedPeersByNetwork = new HashMap<>();
 
-    private Map<String,NetworkPeer> peerById = new HashMap<>();
-    private Map<String,NetworkPeer> peerByAddress = new HashMap<>();
-    private Map<Network,Set<NetworkPeer>> peersByNetwork = new HashMap<>();
-    private Map<String,Set<NetworkPeer>> peersByService = new HashMap<>();
+    private final Map<String,NetworkPeer> peerById = new HashMap<>();
+    private final Map<String,NetworkPeer> peerByAddress = new HashMap<>();
+    private final Map<Network,Set<NetworkPeer>> peersByNetwork = new HashMap<>();
+    private final Map<String,Set<NetworkPeer>> peersByService = new HashMap<>();
 
     public void addSeed(NetworkPeer p) {
         if(seedPeersByNetwork.get(p.getNetwork())==null)
@@ -72,6 +73,21 @@ public class PeerDB {
     public NetworkPeer getRandomPeerByNetwork(Network network) {
         int random = RandomUtil.nextRandomInteger(0, peersByNetwork.get(network).size());
         return (NetworkPeer)peersByNetwork.values().toArray()[random];
+    }
+
+    public List<NetworkPeer> getRandomPeersToShareByNetwork(Network network) {
+        Map<String, NetworkPeer> nps = new HashMap<>();
+        int maxTries = peersToShareInDiscovery * 2;
+        for(int i=0; i<maxTries; i++) {
+            if(nps.size()==peersToShareInDiscovery)
+                break;
+            NetworkPeer np = getRandomPeerByNetwork(network);
+            if(np==null)
+                break;
+            if(!nps.containsKey(np.getId()))
+                nps.put(np.getId(), np);
+        }
+        return new ArrayList<>(nps.values());
     }
 
     public Set<NetworkPeer> findPeersByService(String serviceName) {

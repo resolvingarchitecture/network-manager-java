@@ -9,8 +9,10 @@ import ra.common.network.NetworkStatus;
 import ra.common.tasks.BaseTask;
 import ra.common.tasks.TaskRunner;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 public class NetworkOverlayDiscovery extends BaseTask {
@@ -34,6 +36,14 @@ public class NetworkOverlayDiscovery extends BaseTask {
         for(NetworkState ns : networkStates) { // Iterate through Networks that have reported to the Network Manager
             if(ns.networkStatus == NetworkStatus.CONNECTED) { // If that Network is reporting connected...
                 Envelope e = Envelope.documentFactory();
+                List<NetworkPeer> nps = peerDB.getRandomPeersToShareByNetwork(ns.network);
+                if(!nps.isEmpty()) {
+                    List<Map<String, Object>> mNps = new ArrayList<>();
+                    for (NetworkPeer np : nps) {
+                        mNps.add(np.toMap());
+                    }
+                    e.addNVP("peers",mNps);
+                }
                 NetworkPeer orig = peerDB.getLocalPeerByNetwork(ns.network);
                 NetworkPeer dest;
                 if(peerDB.numberPeersByNetwork(ns.network) == 0 && peerDB.numberSeedPeersByNetwork(ns.network) > 0) {
