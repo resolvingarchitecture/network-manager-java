@@ -98,6 +98,16 @@ public class PeerDB {
         return peersByService.get(serviceName);
     }
 
+    public NetworkPeer peerWithInternetAccessAvailable(Network accessibleByNetwork) {
+
+        return null;
+    }
+
+    public NetworkPeer peerWithSpecificNetworkAvailable(Network accessibleByNetwork, Network availableNetworkToPeer) {
+
+        return null;
+    }
+
     public boolean init(Properties p) {
         this.properties = p;
         if(p.getProperty("ra.networkmanager.maxPeersPerNetwork")!=null) {
