@@ -53,6 +53,7 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_PEERS_BY_SERVICE = "PEERS_BY_SERVICE";
 
     // Sent by each Network Service
+    public static final String OPERATION_UPDATE_LOCAL_PEER = "UPDATE_LOCAL_PEER";
     public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
 
     // Discover overlay network
@@ -149,11 +150,20 @@ public class NetworkManagerService extends BaseService {
                 e.addNVP(NetworkPeer.class.getName(), peerDB.findPeersByService((String)e.getValue(Service.class.getName())));
                 break;
             }
+            case OPERATION_UPDATE_LOCAL_PEER: {
+                if(e.getValue(NetworkPeer.class.getName())!=null) {
+                    Object obj = e.getValue(NetworkPeer.class.getName());
+                    if(obj instanceof NetworkPeer) {
+                        peerDB.savePeer((NetworkPeer)obj, true);
+                    }
+                }
+                break;
+            }
             case OPERATION_UPDATE_PEER: {
                 if(e.getValue(NetworkPeer.class.getName())!=null) {
                     Object obj = e.getValue(NetworkPeer.class.getName());
                     if(obj instanceof NetworkPeer) {
-                        peerDB.savePeer((NetworkPeer)obj);
+                        peerDB.savePeer((NetworkPeer)obj, false);
                     }
                 }
                 break;
@@ -163,7 +173,7 @@ public class NetworkManagerService extends BaseService {
                 if(route instanceof ExternalRoute) {
                    ExternalRoute extRoute = (ExternalRoute) route;
                    NetworkPeer orig = extRoute.getOrigination();
-                   peerDB.savePeer(orig);
+                   peerDB.savePeer(orig, false);
                    LOG.info("Adding ack...");
                    p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
                    if(e.getValue("peers")!=null) {
@@ -172,7 +182,7 @@ public class NetworkManagerService extends BaseService {
                            Network network = Network.valueOf((String)peerMap.get("network"));
                            NetworkPeer np = new NetworkPeer(network);
                            np.fromMap(peerMap);
-                           peerDB.savePeer(np);
+                           peerDB.savePeer(np, false);
                        }
                    }
                 }

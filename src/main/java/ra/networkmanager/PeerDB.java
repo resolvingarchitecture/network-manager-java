@@ -29,7 +29,7 @@ public class PeerDB {
        seedPeersByNetwork.get(p.getNetwork()).add(p);
     }
 
-    public Boolean savePeer(NetworkPeer p) {
+    public Boolean savePeer(NetworkPeer p, boolean local) {
         LOG.info("Saving NetworkPeer...");
         if(p.getId()==null || p.getId().isEmpty()) {
             LOG.warning("NetworkPeer.id is empty. Must have an id for Network Peers to save.");
@@ -43,11 +43,15 @@ public class PeerDB {
             LOG.warning("NetworkPeer.address is empty. Must have an address for Network Peers to save.");
             return false;
         }
-        peerById.put(p.getId(),p);
-        peerByAddress.put(p.getDid().getPublicKey().getAddress(),p);
-        if(peersByNetwork.get(p.getNetwork())==null)
-            peersByNetwork.put(p.getNetwork(),new HashSet<>());
-        peersByNetwork.get(p.getNetwork()).add(p);
+        if(local) {
+            localPeerByNetwork.put(p.getNetwork(), p);
+        } else {
+            peerById.put(p.getId(), p);
+            peerByAddress.put(p.getDid().getPublicKey().getAddress(), p);
+            if (peersByNetwork.get(p.getNetwork()) == null)
+                peersByNetwork.put(p.getNetwork(), new HashSet<>());
+            peersByNetwork.get(p.getNetwork()).add(p);
+        }
         return true;
     }
 
