@@ -46,7 +46,11 @@ public class NetworkOverlayDiscovery extends BaseTask {
                 }
                 NetworkPeer orig = peerDB.getLocalPeerByNetwork(ns.network);
                 NetworkPeer dest;
-                if(peerDB.numberPeersByNetwork(ns.network) == 0 && peerDB.numberSeedPeersByNetwork(ns.network) > 0) {
+                if(peerDB.numberPeersByNetwork(ns.network) == 0) {
+                    if(peerDB.numberSeedPeersByNetwork(ns.network) == 0) {
+                        LOG.info("No seeds therefore unable to bootstrap network.");
+                        return false;
+                    }
                     // Instruct Network Service to begin with provided seed
                     dest = peerDB.getRandomSeedByNetwork(ns.network);
                 } else {
