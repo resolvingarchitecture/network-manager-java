@@ -22,9 +22,7 @@ import java.util.logging.Logger;
 /**
  * Network Manager as a service.
  *
- * Determines if requested network is available.
- * If so, it forwards on to that network service.
- * If not, it returns
+ * Manages Network Peers providing reports.
  *
  */
 public class NetworkManagerService extends BaseService {
