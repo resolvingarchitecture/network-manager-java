@@ -187,6 +187,14 @@ public class NetworkManagerService extends BaseService {
                    }
                 }
             }
+            case OPERATION_NUMBER_PEERS_BY_NETWORK: {
+                Map<String,Object> m = new HashMap<>();
+                for(NetworkState ns : networkStates.values()) {
+                    m.put(ns.network.name(), peerDB.numberPeersByNetwork(ns.network));
+                }
+                e.addNVP(OPERATION_NUMBER_PEERS_BY_NETWORK,m);
+                break;
+            }
             default: {deadLetter(e);break;}
         }
     }
