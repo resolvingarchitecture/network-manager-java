@@ -24,6 +24,7 @@ public class PeerDB {
     private final Map<String,Set<NetworkPeer>> peersByService = new HashMap<>();
 
     public void addSeed(NetworkPeer p) {
+        if(p.getNetwork()==null) return;
         if(seedPeersByNetwork.get(p.getNetwork())==null)
             seedPeersByNetwork.put(p.getNetwork(), new HashSet<>());
        seedPeersByNetwork.get(p.getNetwork()).add(p);
