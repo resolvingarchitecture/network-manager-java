@@ -54,8 +54,9 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_UPDATE_LOCAL_PEER = "UPDATE_LOCAL_PEER";
     public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
 
-    // Discover overlay network
-    public static final String OPERATION_DISCOVER_OVERLAY = "DISCOVER_OVERLAY";
+    // Community Networks
+    public static final String OPERATION_START_COMMUNITY_NETWORK = "START_COMMUNITY_NETWORK";
+    public static final String OPERATION_DISCOVER_COMMUNITY = "DISCOVER_COMMUNITY_NETWORK";
     public static final String OPERATION_PEER_STATUS = "PEER_STATUS";
     public static final String OPERATION_PEER_STATUS_REPLY = "PEER_STATUS_REPLY";
 
