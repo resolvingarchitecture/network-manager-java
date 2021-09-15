@@ -1,7 +1,6 @@
 package ra.networkmanager;
 
 import ra.common.Envelope;
-import ra.common.messaging.CommandMessage;
 import ra.common.network.NetworkPeer;
 import ra.common.network.NetworkService;
 import ra.common.network.NetworkState;
@@ -15,16 +14,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-public class NetworkOverlayDiscovery extends BaseTask {
+public class NetworkDiscovery extends BaseTask {
 
-    private static Logger LOG = Logger.getLogger(NetworkOverlayDiscovery.class.getName());
+    private static Logger LOG = Logger.getLogger(NetworkDiscovery.class.getName());
 
     private final NetworkManagerService service;
     private final P2PRelationship p2PRelationship;
     private final PeerDB peerDB;
 
-    public NetworkOverlayDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB, P2PRelationship p2PRelationship) {
-        super(NetworkOverlayDiscovery.class.getSimpleName(), taskRunner);
+    public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB, P2PRelationship p2PRelationship) {
+        super(NetworkDiscovery.class.getSimpleName(), taskRunner);
         this.service = service;
         this.peerDB = peerDB;
         this.p2PRelationship = p2PRelationship;

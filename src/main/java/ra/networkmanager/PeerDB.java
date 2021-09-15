@@ -1,6 +1,7 @@
 package ra.networkmanager;
 
 import ra.common.network.Network;
+import ra.common.network.NetworkGroup;
 import ra.common.network.NetworkPeer;
 import ra.common.RandomUtil;
 
@@ -22,6 +23,8 @@ public class PeerDB {
     private final Map<String,NetworkPeer> peerByAddress = new HashMap<>();
     private final Map<Network,Set<NetworkPeer>> peersByNetwork = new HashMap<>();
     private final Map<String,Set<NetworkPeer>> peersByService = new HashMap<>();
+
+    private final Map<UUID,NetworkGroup> networkGroupsById = new HashMap<>();
 
     public void addSeed(NetworkPeer p) {
         if(p.getNetwork()==null) return;

@@ -362,7 +362,7 @@ public class NetworkManagerService extends BaseService {
         del.setDelayTimeMS(5000L);
         del.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(del);
-        NetworkOverlayDiscovery overlay = new NetworkOverlayDiscovery(taskRunner, this, peerDB, p2PRelationship);
+        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, p2PRelationship);
         overlay.setDelayed(false);
         overlay.setPeriodicity(30 * 1000L); // Check every 30 seconds
         taskRunner.addTask(overlay);
