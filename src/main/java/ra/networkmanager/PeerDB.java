@@ -59,6 +59,15 @@ public class PeerDB {
         return true;
     }
 
+    public NetworkPeer findPeer(NetworkPeer np) {
+        if(np.getId()!=null && peerById.get(np.getId())!=null)
+            return peerById.get(np.getId());
+        else if(np.getDid()!=null && np.getDid().getPublicKey()!=null && np.getDid().getPublicKey().getAddress()!=null && peerByAddress.get(np.getDid().getPublicKey().getAddress())!=null)
+            return peerByAddress.get(np.getDid().getPublicKey().getAddress());
+        else
+            return null;
+    }
+
     public int numberPeersByNetwork(Network network) {
         if(peersByNetwork.get(network)==null) return 0;
         return peersByNetwork.get(network).size();

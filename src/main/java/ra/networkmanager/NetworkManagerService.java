@@ -34,6 +34,8 @@ public class NetworkManagerService extends BaseService {
     // use if no External Route is present. If an External Route is present, the Network Manager will simply use it if available.
     // If not available, it will hold the message until it is available then send.
     public static final String OPERATION_SEND = "SEND";
+    // Sends the payload to the supplied list of Network Peers.
+    public static final String OPERATION_PUBLISH = "PUBLISH";
     // Sent by Network Services to update the Network Manager on state changes.
     public static final String OPERATION_UPDATE_NETWORK_STATE = "UPDATE_NETWORK_STATE";
     // Returns a list of the current Networks States
@@ -60,6 +62,7 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_PEER_STATUS = "PEER_STATUS";
     public static final String OPERATION_PEER_STATUS_REPLY = "PEER_STATUS_REPLY";
 
+    // Network Name, Network
     protected final Map<String, NetworkState> networkStates = new HashMap<>();
     protected File messageHold;
     protected TaskRunner taskRunner;
@@ -118,6 +121,26 @@ public class NetworkManagerService extends BaseService {
                     }
                 }
                 producer.send(e);
+                break;
+            }
+            case OPERATION_PUBLISH: {
+                if(e.getValue(NetworkPeer.class.getName())!=null) {
+                    // Get peers
+                    List<NetworkPeer> peers = (List<NetworkPeer>)e.getValue(NetworkPeer.class.getName());
+                    for(NetworkPeer dp : peers) {
+                        // Is Peer Network available
+                        Network network = selectNetwork(dp);
+                        if(network==null) {
+                            continue; // TODO: need to set up retries
+                        }
+                        String service = getNetworkServiceFromNetwork(network);
+                        NetworkPeer lp = peerDB.getLocalPeerByNetwork(network);
+                        if(lp==null) {
+                            continue; // TODO: put in a retry wait
+                        }
+                        e.addExternalRoute(service, "SEND", lp, dp);
+                    }
+                }
                 break;
             }
             case OPERATION_ADD_SEED_PEER: {
@@ -338,6 +361,31 @@ public class NetworkManagerService extends BaseService {
 
     List<NetworkState> getNetworkStates() {
         return new ArrayList<>(networkStates.values());
+    }
+
+    protected Network selectNetwork(NetworkPeer np) {
+        Network network = np.getNetwork();
+        if(network==null) {
+            if(np.getDid()==null || np.getDid().getPublicKey()==null || np.getDid().getPublicKey().getAddress()==null)
+                return null;
+            // Lookup to see if we know this peer's network
+            NetworkPeer npFound = peerDB.findPeer(np);
+            if(npFound!=null && npFound.getNetwork()!=null)
+                return npFound.getNetwork();
+            else
+                return null;
+        } else {
+            NetworkState ns = networkStates.get(network.name());
+            if(ns==null) {
+                // Network unknown
+                return null;
+            } else if(ns.networkStatus == NetworkStatus.CONNECTED) {
+                return network;
+            } else {
+                // Network known but not connected
+                return null; // TODO: Need to identify to wait
+            }
+        }
     }
 
     @Override
