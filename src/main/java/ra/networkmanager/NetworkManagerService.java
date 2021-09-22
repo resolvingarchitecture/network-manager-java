@@ -124,22 +124,32 @@ public class NetworkManagerService extends BaseService {
                 break;
             }
             case OPERATION_PUBLISH: {
-                if(e.getValue(NetworkPeer.class.getName())!=null) {
-                    // Get peers
-                    List<NetworkPeer> peers = (List<NetworkPeer>)e.getValue(NetworkPeer.class.getName());
-                    for(NetworkPeer dp : peers) {
-                        // Is Peer Network available
-                        Network network = selectNetwork(dp);
-                        if(network==null) {
-                            continue; // TODO: need to set up retries
-                        }
-                        String service = getNetworkServiceFromNetwork(network);
-                        NetworkPeer lp = peerDB.getLocalPeerByNetwork(network);
-                        if(lp==null) {
-                            continue; // TODO: put in a retry wait
-                        }
-                        e.addExternalRoute(service, "SEND", lp, dp);
+                if(e.getValue(NetworkPeer.class.getName())==null) {
+                    LOG.warning("Unable to publish to no peers.");
+                }
+                // Get peers
+                List<NetworkPeer> peers = (List<NetworkPeer>)e.getValue(NetworkPeer.class.getName());
+                // Get preferred Network service
+                Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
+                // TODO: Determine if there is a preferred network service and if that service/network is available.
+                Network preferredNetwork = getNetworkFromService(nextRoute.getService());
+                if(preferredNetwork==null) {
+
+                } else {
+
+                }
+                for(NetworkPeer dp : peers) {
+                    // Is Peer Network available
+                    Network network = selectNetwork(dp);
+                    if(network==null) {
+                        continue; // TODO: need to set up retries
                     }
+                    String service = getNetworkServiceFromNetwork(network);
+                    NetworkPeer lp = peerDB.getLocalPeerByNetwork(network);
+                    if(lp==null) {
+                        continue; // TODO: put in a retry wait
+                    }
+                    e.addExternalRoute(service, "SEND", lp, dp);
                 }
                 break;
             }
@@ -313,17 +323,17 @@ public class NetworkManagerService extends BaseService {
     }
 
     protected Network getNetworkFromService(String service) {
-        Object obj = null;
-        try {
-            obj = Class.forName(service).getConstructor().newInstance();
-            if(obj instanceof NetworkService) {
-                NetworkService ns = (NetworkService)obj;
-                return ns.getNetworkState().network;
-            }
-        } catch (Exception e) {
-            LOG.warning(e.getLocalizedMessage());
+        switch (service) {
+            case "ra.tor.TORClientService": return Network.Tor;
+            case "ra.i2p.I2PEmbeddedService": return Network.I2P;
+            case "ra.bluetooth.BluetoothService": return Network.Bluetooth;
+            case "ra.wifi.WiFiService": return Network.WiFi;
+            case "ra.satellite.SatelliteService": return Network.Satellite;
+            case "ra.fsradio.FullSpectrumRadioService": return Network.FSRadio;
+            case "ra.lifi.LiFiService": return Network.LiFi;
+            case "ra.http.HttpService": return Network.HTTP;
+            default: return null;
         }
-        return null;
     }
 
     protected NetworkStatus getNetworkStatus(Network network) {
@@ -332,6 +342,7 @@ public class NetworkManagerService extends BaseService {
 
     protected String getNetworkServiceFromNetwork(Network network) {
         switch (network) {
+            case HTTP: return "ra.http.HttpService";
             case Tor: return "ra.tor.TORClientService";
             case I2P: return "ra.i2p.I2PEmbeddedService";
             case Bluetooth: return "ra.bluetooth.BluetoothService";
