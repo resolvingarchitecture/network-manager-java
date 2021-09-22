@@ -128,11 +128,18 @@ public class NetworkManagerService extends BaseService {
             case OPERATION_PUBLISH: {
                 if(e.getValue(NetworkPeer.class.getName())==null) {
                     LOG.warning("Unable to publish to no peers.");
+                    deadLetter(e);
+                    break;
                 }
                 // Get peers
                 List<NetworkPeer> peers = (List<NetworkPeer>)e.getValue(NetworkPeer.class.getName());
                 // Get preferred Network service
                 Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
+                if(nextRoute==null) {
+                    LOG.warning("No next route; unable to publish to non-existent route.");
+                    deadLetter(e);
+                    break;
+                }
                 // TODO: Determine if there is a preferred network service and if that service/network is available.
                 Network preferredNetwork = getNetworkFromService(nextRoute.getService());
                 if(preferredNetwork==null) {
