@@ -111,14 +111,16 @@ public class NetworkManagerService extends BaseService {
                     break;
                 }
                 Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
-                String nextService = nextRoute.getService().toLowerCase();
+                String nextService = nextRoute.getService();
                 Network nextNetwork = getNetworkFromService(nextService);
-                if(nextNetwork!=null) {
-                    NetworkState networkState = networkStates.get(nextNetwork.name());
-                    if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
-                        sendToMessageHold(e);
-                        break;
-                    }
+                if(nextNetwork==null) {
+                    deadLetter(e); // Network unknown
+                    break;
+                }
+                NetworkState networkState = networkStates.get(nextNetwork.name());
+                if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
+                    sendToMessageHold(e);
+                    break;
                 }
                 producer.send(e);
                 break;
@@ -134,9 +136,14 @@ public class NetworkManagerService extends BaseService {
                 // TODO: Determine if there is a preferred network service and if that service/network is available.
                 Network preferredNetwork = getNetworkFromService(nextRoute.getService());
                 if(preferredNetwork==null) {
+                    // Determine Network
 
                 } else {
-
+                    NetworkState networkState = networkStates.get(preferredNetwork.name());
+                    if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
+                        sendToMessageHold(e);
+                        break;
+                    }
                 }
                 for(NetworkPeer dp : peers) {
                     // Is Peer Network available
