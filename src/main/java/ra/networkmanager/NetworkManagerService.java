@@ -4,8 +4,10 @@ import ra.common.Envelope;
 import ra.common.messaging.EventMessage;
 import ra.common.messaging.MessageProducer;
 import ra.common.network.*;
+import ra.common.route.BaseRoute;
 import ra.common.route.ExternalRoute;
 import ra.common.route.Route;
+import ra.common.route.SimpleExternalRoute;
 import ra.common.service.BaseService;
 import ra.common.service.Service;
 import ra.common.service.ServiceStatus;
@@ -135,35 +137,38 @@ public class NetworkManagerService extends BaseService {
                 List<NetworkPeer> peers = (List<NetworkPeer>)e.getValue(NetworkPeer.class.getName());
                 // Get preferred Network service
                 Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
-                if(nextRoute==null) {
-                    LOG.warning("No next route; unable to publish to non-existent route.");
-                    deadLetter(e);
-                    break;
-                }
-                // TODO: Determine if there is a preferred network service and if that service/network is available.
-                Network preferredNetwork = getNetworkFromService(nextRoute.getService());
-                if(preferredNetwork==null) {
-                    // Determine Network
-
-                } else {
-                    NetworkState networkState = networkStates.get(preferredNetwork.name());
-                    if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
-                        sendToMessageHold(e);
-                        break;
-                    }
+                Network preferredNetwork = null;
+                if(nextRoute instanceof ExternalRoute) {
+                    preferredNetwork = getNetworkFromService(nextRoute.getService());
                 }
                 for(NetworkPeer dp : peers) {
+                    Envelope eDp = Envelope.envelopeFactory(e);
                     // Is Peer Network available
-                    Network network = selectNetwork(dp);
+                    Network network = selectNetwork(dp, preferredNetwork);
                     if(network==null) {
-                        continue; // TODO: need to set up retries
+                        // TODO: Hold message and retry
+                    } else {
+                        String service = getNetworkServiceFromNetwork(network);
+                        if(service==null) {
+                            break; // TODO: determine how to handle
+                        }
+                        NetworkPeer lp = peerDB.getLocalPeerByNetwork(network);
+                        nextRoute = eDp.getRoute();
+                        if (lp == null) {
+                            break; // TODO: put in a retry wait
+                        } else if(nextRoute==null) {
+                            eDp.addExternalRoute(service, "SEND", lp, dp);
+                            send(eDp);
+                        } else if(nextRoute instanceof SimpleExternalRoute) {
+                            BaseRoute baseRoute = (BaseRoute) nextRoute;
+                            baseRoute.setService(service);
+                            baseRoute.setOperation("SEND"); // Ensure it is sending
+                            SimpleExternalRoute extRoute = (SimpleExternalRoute) nextRoute;
+                            extRoute.setOrigination(lp);
+                            extRoute.setDestination(dp);
+                            send(eDp);
+                        }
                     }
-                    String service = getNetworkServiceFromNetwork(network);
-                    NetworkPeer lp = peerDB.getLocalPeerByNetwork(network);
-                    if(lp==null) {
-                        continue; // TODO: put in a retry wait
-                    }
-                    e.addExternalRoute(service, "SEND", lp, dp);
                 }
                 break;
             }
@@ -388,24 +393,36 @@ public class NetworkManagerService extends BaseService {
         return new ArrayList<>(networkStates.values());
     }
 
-    protected Network selectNetwork(NetworkPeer np) {
-        Network network = np.getNetwork();
-        if(network==null) {
+    protected Network selectNetwork(NetworkPeer np, Network preferredNetwork) {
+        if(preferredNetwork!=null) {
+            NetworkState networkState = networkStates.get(preferredNetwork.name());
+            if (networkState != null && networkState.networkStatus == NetworkStatus.CONNECTED) {
+                return preferredNetwork;
+            }
+        }
+        Network peerNetwork = np.getNetwork();
+        if(peerNetwork==null) {
             if(np.getDid()==null || np.getDid().getPublicKey()==null || np.getDid().getPublicKey().getAddress()==null)
                 return null;
             // Lookup to see if we know this peer's network
             NetworkPeer npFound = peerDB.findPeer(np);
-            if(npFound!=null && npFound.getNetwork()!=null)
-                return npFound.getNetwork();
-            else
+            if(npFound!=null && npFound.getNetwork()!=null) {
+                peerNetwork = npFound.getNetwork();
+                NetworkState networkState = networkStates.get(peerNetwork.name());
+                if (networkState != null && networkState.networkStatus == NetworkStatus.CONNECTED) {
+                    return peerNetwork;
+                } else {
+                    return null;
+                }
+            } else
                 return null;
         } else {
-            NetworkState ns = networkStates.get(network.name());
+            NetworkState ns = networkStates.get(peerNetwork.name());
             if(ns==null) {
                 // Network unknown
                 return null;
             } else if(ns.networkStatus == NetworkStatus.CONNECTED) {
-                return network;
+                return peerNetwork;
             } else {
                 // Network known but not connected
                 return null; // TODO: Need to identify to wait
