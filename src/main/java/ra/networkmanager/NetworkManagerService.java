@@ -167,6 +167,8 @@ public class NetworkManagerService extends BaseService {
                             extRoute.setOrigination(lp);
                             extRoute.setDestination(dp);
                             send(eDp);
+                        } else {
+                            break; // TODO: determine how to handle
                         }
                     }
                 }
