@@ -140,9 +140,14 @@ public class NetworkManagerService extends BaseService {
                 Network preferredNetwork = null;
                 if(nextRoute instanceof ExternalRoute) {
                     preferredNetwork = getNetworkFromService(nextRoute.getService());
+                } else {
+                    LOG.warning("Next route must be an ExternalRoute.");
+                    break;
                 }
                 for(NetworkPeer dp : peers) {
                     Envelope eDp = Envelope.envelopeFactory(e);
+                    // Clear out list
+                    e.addNVP(NetworkPeer.class.getName(), null);
                     // Is Peer Network available
                     Network network = selectNetwork(dp, preferredNetwork);
                     if(network==null) {
