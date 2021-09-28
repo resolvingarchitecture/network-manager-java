@@ -113,19 +113,19 @@ public class NetworkManagerService extends BaseService {
                     producer.send(e);
                     break;
                 }
-                Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
-                String nextService = nextRoute.getService();
-                Network nextNetwork = getNetworkFromService(nextService);
-                if(nextNetwork==null) {
-                    deadLetter(e); // Network unknown
+                if(e.getValue(NetworkPeer.class.getName())==null) {
+                    LOG.warning("Unable to send to missing peer.");
+                    deadLetter(e);
                     break;
                 }
-                NetworkState networkState = networkStates.get(nextNetwork.name());
-                if (networkState == null || networkState.networkStatus != NetworkStatus.CONNECTED) {
-                    sendToMessageHold(e);
-                    break;
+                NetworkPeer np = (NetworkPeer)e.getValue(NetworkPeer.class.getName());
+                Tuple2<Boolean,String> result = setExternalRoute(np, e);
+                if(result.first) {
+                    send(e);
+                } else {
+                    LOG.warning(result.second);
+                    deadLetter(e);
                 }
-                producer.send(e);
                 break;
             }
             case OPERATION_PUBLISH: {
@@ -146,6 +146,7 @@ public class NetworkManagerService extends BaseService {
                         send(e);
                     } else {
                         LOG.warning(result.second);
+                        deadLetter(e);
                     }
                 }
                 break;
