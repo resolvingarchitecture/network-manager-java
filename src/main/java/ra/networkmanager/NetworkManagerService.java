@@ -119,11 +119,11 @@ public class NetworkManagerService extends BaseService {
                     break;
                 }
                 NetworkPeer np = (NetworkPeer)e.getValue(NetworkPeer.class.getName());
-                Tuple2<Boolean,String> result = setExternalRoute(np, e);
+                Tuple2<Boolean,ResponseCodes> result = setExternalRoute(np, e);
                 if(result.first) {
                     send(e);
                 } else {
-                    LOG.warning(result.second);
+                    LOG.warning(result.second.name());
                     deadLetter(e);
                 }
                 break;
@@ -141,11 +141,11 @@ public class NetworkManagerService extends BaseService {
                     // Clear out list
                     eDp.addNVP(NetworkPeer.class.getName(), null);
                     // Ensure External Route is selected and set
-                    Tuple2<Boolean,String> result = setExternalRoute(dp, e);
+                    Tuple2<Boolean,ResponseCodes> result = setExternalRoute(dp, e);
                     if(result.first) {
                         send(e);
                     } else {
-                        LOG.warning(result.second);
+                        LOG.warning(result.second.name());
                         deadLetter(e);
                     }
                 }
@@ -372,7 +372,7 @@ public class NetworkManagerService extends BaseService {
         return new ArrayList<>(networkStates.values());
     }
 
-    protected Tuple2<Boolean,String> setExternalRoute(NetworkPeer np, Envelope e) {
+    protected Tuple2<Boolean, ResponseCodes> setExternalRoute(NetworkPeer np, Envelope e) {
         // Get preferred Network service
         Route nextRoute = e.getDynamicRoutingSlip().peekAtNextRoute();
         Network preferredNetwork = null;
@@ -380,7 +380,7 @@ public class NetworkManagerService extends BaseService {
             preferredNetwork = getNetworkFromService(nextRoute.getService());
         } else {
             LOG.warning("Next route must be an ExternalRoute.");
-            return new Tuple2<>(false,"Next route must be an ExternalRoute.");
+            return new Tuple2<>(false,ResponseCodes.NEXT_ROUTE_MUST_BE_AN_EXTERNAL_ROUTE);
         }
         if(preferredNetwork!=null) {
             NetworkState networkState = networkStates.get(preferredNetwork.name());
@@ -408,19 +408,19 @@ public class NetworkManagerService extends BaseService {
             }
         }
         if(peerNetwork==null) {
-            return new Tuple2<>(false, "Unable to select peer network.");
+            return new Tuple2<>(false, ResponseCodes.UNABLE_TO_SELECT_PEER_NETWORK);
         }
         String service = getNetworkServiceFromNetwork(peerNetwork);
         if(service==null) {
-            return new Tuple2<>(false, "Service not found for network: "+peerNetwork.name());
+            return new Tuple2<>(false, ResponseCodes.SERVICE_NOT_FOUND_FOR_NETWORK);
         }
         NetworkPeer lp = peerDB.getLocalPeerByNetwork(peerNetwork);
         nextRoute = e.getRoute();
         if (lp == null) {
-            return new Tuple2<>(false, "Local peer for network "+peerNetwork.name()+ " not available.");
+            return new Tuple2<>(false, ResponseCodes.LOCAL_PEER_FOR_NETWORK_NOT_AVAILABLE);
         } else if(nextRoute==null) {
             e.addExternalRoute(service, "SEND", lp, np);
-            return new Tuple2<>(true, "Ready");
+            return new Tuple2<>(true, ResponseCodes.READY);
         } else if(nextRoute instanceof SimpleExternalRoute) {
             BaseRoute baseRoute = (BaseRoute) nextRoute;
             baseRoute.setService(service);
@@ -428,9 +428,9 @@ public class NetworkManagerService extends BaseService {
             SimpleExternalRoute extRoute = (SimpleExternalRoute) nextRoute;
             extRoute.setOrigination(lp);
             extRoute.setDestination(np);
-            return new Tuple2<>(true, "Ready");
+            return new Tuple2<>(true, ResponseCodes.READY);
         }
-        return new Tuple2<>(false, "Unable to determine external route.");
+        return new Tuple2<>(false, ResponseCodes.UNABLE_TO_DETERMINE_EXTERNAL_ROUTE);
     }
 
     @Override
