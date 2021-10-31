@@ -19,14 +19,14 @@ public class NetworkDiscovery extends BaseTask {
     private static Logger LOG = Logger.getLogger(NetworkDiscovery.class.getName());
 
     private final NetworkManagerService service;
-    private final P2PRelationship p2PRelationship;
+//    private final P2PRelationship p2PRelationship;
     private final PeerDB peerDB;
 
     public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB, P2PRelationship p2PRelationship) {
         super(NetworkDiscovery.class.getSimpleName(), taskRunner);
         this.service = service;
         this.peerDB = peerDB;
-        this.p2PRelationship = p2PRelationship;
+//        this.p2PRelationship = p2PRelationship;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class NetworkDiscovery extends BaseTask {
                         dest);
                 // 1. Send to local specific Network Service requesting to send on this request.
                 e.addRoute(service.getNetworkServiceFromNetwork(ns.network),"SEND");
-                p2PRelationship.startAck(dest.getId(), new Date().getTime());
+//                p2PRelationship.startAck(dest.getId(), new Date().getTime());
                 service.send(e);
             }
         }

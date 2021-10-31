@@ -70,7 +70,7 @@ public class NetworkManagerService extends BaseService {
     protected File messageHold;
     protected TaskRunner taskRunner;
     protected PeerDB peerDB;
-    protected P2PRelationship p2PRelationship;
+//    protected P2PRelationship p2PRelationship;
 
     public NetworkManagerService() {
         super();
@@ -205,7 +205,7 @@ public class NetworkManagerService extends BaseService {
                    NetworkPeer orig = extRoute.getOrigination();
                    peerDB.savePeer(orig, false);
                    LOG.info("Adding ack...");
-                   p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
+//                   p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
                    if(e.getValue("peers")!=null) {
                        List<Map<String,Object>> peerMaps = (List<Map<String,Object>>)e.getValue("peers");
                        for(Map<String,Object> peerMap : peerMaps) {
@@ -455,7 +455,7 @@ public class NetworkManagerService extends BaseService {
         del.setDelayTimeMS(5000L);
         del.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(del);
-        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, p2PRelationship);
+        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, null);
         overlay.setDelayed(true);
         overlay.setDelayTimeMS(2000L);
         overlay.setPeriodicity(30 * 1000L); // Check every 30 seconds
