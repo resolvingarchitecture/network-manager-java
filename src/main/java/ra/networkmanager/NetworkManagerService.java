@@ -452,13 +452,13 @@ public class NetworkManagerService extends BaseService {
         }
         DelayedSend del = new DelayedSend(this, taskRunner, messageHold);
         del.setDelayed(true);
-        del.setDelayTimeMS(5000L);
+        del.setDelayTimeMS(10 *1000L); // Delay by 10 seconds
         del.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(del);
         NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, null);
         overlay.setDelayed(true);
-        overlay.setDelayTimeMS(2000L);
-        overlay.setPeriodicity(30 * 1000L); // Check every 30 seconds
+        overlay.setDelayTimeMS(40 * 1000L); // Delay for 40 seconds to start 30 seconds after DelaySend task
+        overlay.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(overlay);
 
         peerDB.init(config);
