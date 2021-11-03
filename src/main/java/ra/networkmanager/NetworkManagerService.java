@@ -45,6 +45,10 @@ public class NetworkManagerService extends BaseService {
     public static final String OPERATION_LOCAL_NETWORKS = "LOCAL_NETWORKS";
     // Returns a list of networks currently experiencing no difficulties in creating and maintaining connections
     public static final String OPERATION_ACTIVE_NETWORKS = "ACTIVE_NETWORKS";
+    // Network status
+    public static final String OPERATION_NETWORK_STATUS = "NETWORK_STATUS";
+    // Network connected
+    public static final String OPERATION_NETWORK_CONNECTED = "NETWORK_CONNECTED";
 
     // *** Peer Management ***
     public static final String OPERATION_ADD_SEED_PEER = "ADD_SEED_PEER";
@@ -176,6 +180,30 @@ public class NetworkManagerService extends BaseService {
                 e.addNVP(NetworkPeer.class.getName(), networks);
                 break;
             }
+            case OPERATION_NETWORK_STATUS: {
+                Object networkObj = e.getValue(Network.class.getName());
+                Network network = null;
+                if(networkObj instanceof Network) {
+                    network = (Network)networkObj;
+                } else if(networkObj instanceof String) {
+                    network = Network.valueOf((String)networkObj);
+                }
+                if(network!=null) {
+                    e.addNVP(Network.class.getName(), getNetworkStatus(network));
+                }
+            }
+            case OPERATION_NETWORK_CONNECTED: {
+                Object networkObj = e.getValue(Network.class.getName());
+                Network network = null;
+                if(networkObj instanceof Network) {
+                    network = (Network)networkObj;
+                } else if(networkObj instanceof String) {
+                    network = Network.valueOf((String)networkObj);
+                }
+                if(network!=null) {
+                    e.addNVP(Network.class.getName(), isNetworkReady(network).toString());
+                }
+            }
             case OPERATION_PEERS_BY_SERVICE: {
                 e.addNVP(NetworkPeer.class.getName(), peerDB.findPeersByService((String)e.getValue(Service.class.getName())));
                 break;
@@ -291,7 +319,7 @@ public class NetworkManagerService extends BaseService {
         producer.send(e);
     }
 
-    public boolean isNetworkReady(Network network) {
+    public Boolean isNetworkReady(Network network) {
         switch (network) {
             case HTTP: return NetworkStatus.CONNECTED == getNetworkStatus(Network.HTTP);
             case Tor: return NetworkStatus.CONNECTED == getNetworkStatus(Network.Tor);
