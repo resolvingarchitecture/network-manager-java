@@ -1,7 +1,6 @@
 package ra.networkmanager;
 
-import ra.common.Envelope;
-import ra.common.Tuple2;
+import ra.common.*;
 import ra.common.messaging.EventMessage;
 import ra.common.messaging.MessageProducer;
 import ra.common.network.*;
@@ -13,14 +12,14 @@ import ra.common.service.BaseService;
 import ra.common.service.Service;
 import ra.common.service.ServiceStatus;
 import ra.common.service.ServiceStatusObserver;
-import ra.common.Config;
-import ra.common.FileUtil;
 import ra.common.tasks.TaskRunner;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
+
+import static ra.common.JSONParser.parse;
 
 /**
  * Network Manager as a service.
@@ -62,6 +61,7 @@ public class NetworkManagerService extends BaseService {
     // Sent by each Network Service
     public static final String OPERATION_UPDATE_LOCAL_PEER = "UPDATE_LOCAL_PEER";
     public static final String OPERATION_UPDATE_PEER = "UPDATE_PEER";
+    public static final String OPERATION_UPDATE_PEERS = "UPDATE_PEERS";
 
     // Community Networks
     public static final String OPERATION_START_COMMUNITY_NETWORK = "START_COMMUNITY_NETWORK";
@@ -191,6 +191,7 @@ public class NetworkManagerService extends BaseService {
                 if(network!=null) {
                     e.addNVP(Network.class.getName(), getNetworkStatus(network));
                 }
+                break;
             }
             case OPERATION_NETWORK_CONNECTED: {
                 Object networkObj = e.getValue(Network.class.getName());
@@ -203,6 +204,7 @@ public class NetworkManagerService extends BaseService {
                 if(network!=null) {
                     e.addNVP(Network.class.getName(), isNetworkReady(network).toString());
                 }
+                break;
             }
             case OPERATION_PEERS_BY_SERVICE: {
                 e.addNVP(NetworkPeer.class.getName(), peerDB.findPeersByService((String)e.getValue(Service.class.getName())));
@@ -226,6 +228,30 @@ public class NetworkManagerService extends BaseService {
                 }
                 break;
             }
+            case OPERATION_UPDATE_PEERS: {
+                Object peersObj = e.getValue(NetworkPeer.class.getName());
+                List<NetworkPeer> peers = null;
+                if(peersObj instanceof List) {
+                    peers = (List<NetworkPeer>)peersObj;
+                } else if(peersObj instanceof String) {
+                    List<Map<String,Object>> objects = (List<Map<String,Object>>) JSONParser.parse(peers);
+                    peers = new ArrayList<>();
+                    for(Map<String,Object> m : objects) {
+                        Network network = Network.valueOf((String)m.get("network"));
+                        NetworkPeer np = new NetworkPeer(network);
+                        np.fromMap(m);
+                        peers.add(np);
+                    }
+                } else {
+                    LOG.warning("Unable to recognize peers list for updating.");
+                    deadLetter(e);
+                    break;
+                }
+                for(NetworkPeer np : peers) {
+                    peerDB.savePeer(np, false);
+                }
+                break;
+            }
             case OPERATION_PEER_STATUS_REPLY: {
                 Route route = e.getRoute();
                 if(route instanceof ExternalRoute) {
@@ -244,6 +270,7 @@ public class NetworkManagerService extends BaseService {
                        }
                    }
                 }
+                break;
             }
             case OPERATION_NUMBER_PEERS_BY_NETWORK: {
                 Map<String,Object> m = new HashMap<>();
