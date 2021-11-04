@@ -79,18 +79,10 @@ public class NetworkManagerService extends BaseService {
     public NetworkManagerService() {
         super();
         taskRunner = new TaskRunner(1,1);
-        peerDB = new PeerDB();
     }
 
     public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer) {
         super(producer, observer);
-        taskRunner = new TaskRunner(1,1);
-        peerDB = new PeerDB();
-    }
-
-    public NetworkManagerService(MessageProducer producer, ServiceStatusObserver observer, PeerDB peerDB) {
-        super(producer, observer);
-        this.peerDB = peerDB;
         taskRunner = new TaskRunner(1,1);
     }
 
@@ -158,7 +150,7 @@ public class NetworkManagerService extends BaseService {
             case OPERATION_ADD_SEED_PEER: {
                 Object obj = e.getValue(NetworkPeer.class.getName()+":Seed");
                 if(obj instanceof NetworkPeer) {
-                    peerDB.addSeed((NetworkPeer) obj);
+                    peerDB.savePeer((NetworkPeer) obj, false, RelType.Seed);
                 }
                 break;
             }
@@ -214,7 +206,10 @@ public class NetworkManagerService extends BaseService {
                 if(e.getValue(NetworkPeer.class.getName())!=null) {
                     Object obj = e.getValue(NetworkPeer.class.getName());
                     if(obj instanceof NetworkPeer) {
-                        peerDB.savePeer((NetworkPeer)obj, true);
+                        NetworkPeer p = (NetworkPeer)obj;
+                        if(p.getNetwork()!=null) {
+                            peerDB.savePeer(p, true, RelType.fromNetwork(p.getNetwork().name()));
+                        }
                     }
                 }
                 break;
@@ -223,7 +218,10 @@ public class NetworkManagerService extends BaseService {
                 if(e.getValue(NetworkPeer.class.getName())!=null) {
                     Object obj = e.getValue(NetworkPeer.class.getName());
                     if(obj instanceof NetworkPeer) {
-                        peerDB.savePeer((NetworkPeer)obj, false);
+                        NetworkPeer p = (NetworkPeer)obj;
+                        if(p.getNetwork()!=null) {
+                            peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork().name()));
+                        }
                     }
                 }
                 break;
@@ -247,28 +245,34 @@ public class NetworkManagerService extends BaseService {
                     deadLetter(e);
                     break;
                 }
-                for(NetworkPeer np : peers) {
-                    peerDB.savePeer(np, false);
+                for(NetworkPeer p : peers) {
+                    if(p.getNetwork()!=null) {
+                        peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork().name()));
+                    }
                 }
                 break;
             }
             case OPERATION_PEER_STATUS_REPLY: {
                 Route route = e.getRoute();
                 if(route instanceof ExternalRoute) {
-                   ExternalRoute extRoute = (ExternalRoute) route;
-                   NetworkPeer orig = extRoute.getOrigination();
-                   peerDB.savePeer(orig, false);
-                   LOG.info("Adding ack...");
+                    ExternalRoute extRoute = (ExternalRoute) route;
+                    NetworkPeer orig = extRoute.getOrigination();
+                    if(orig.getNetwork()!=null) {
+                        peerDB.savePeer(orig, false, RelType.fromNetwork(orig.getNetwork().name()));
+                    }
+                    LOG.info("Adding ack...");
 //                   p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
-                   if(e.getValue("peers")!=null) {
+                    if(e.getValue("peers")!=null) {
                        List<Map<String,Object>> peerMaps = (List<Map<String,Object>>)e.getValue("peers");
                        for(Map<String,Object> peerMap : peerMaps) {
                            Network network = Network.valueOf((String)peerMap.get("network"));
                            NetworkPeer np = new NetworkPeer(network);
                            np.fromMap(peerMap);
-                           peerDB.savePeer(np, false);
+                           if(np.getNetwork()!=null) {
+                               peerDB.savePeer(np, false, RelType.fromNetwork(np.getNetwork().name()));
+                           }
                        }
-                   }
+                    }
                 }
                 break;
             }
@@ -505,21 +509,34 @@ public class NetworkManagerService extends BaseService {
             LOG.severe("Unable to create message hold directory.");
             return false;
         }
+
+        initPeerDB();
+        initDelayedSend();
+        initDiscovery();
+
+        updateStatus(ServiceStatus.RUNNING);
+        return true;
+    }
+
+    protected boolean initPeerDB() {
+        this.peerDB = new InMemoryPeerDB(); // Default
+        return this.peerDB.init(config);
+    }
+
+    protected void initDelayedSend() {
         DelayedSend del = new DelayedSend(this, taskRunner, messageHold);
         del.setDelayed(true);
         del.setDelayTimeMS(10 *1000L); // Delay by 10 seconds
         del.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(del);
+    }
+
+    protected void initDiscovery() {
         NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, null);
         overlay.setDelayed(true);
         overlay.setDelayTimeMS(40 * 1000L); // Delay for 40 seconds to start 30 seconds after DelaySend task
         overlay.setPeriodicity(60 * 1000L); // Check every minute
         taskRunner.addTask(overlay);
-
-        peerDB.init(config);
-
-        updateStatus(ServiceStatus.RUNNING);
-        return true;
     }
 
     @Override
@@ -546,6 +563,7 @@ public class NetworkManagerService extends BaseService {
     @Override
     public boolean shutdown() {
         LOG.info("Shutting down...");
+
         updateStatus(ServiceStatus.SHUTDOWN);
         LOG.info("Shutdown.");
         return true;

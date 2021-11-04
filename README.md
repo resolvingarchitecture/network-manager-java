@@ -5,6 +5,9 @@ overlay networks.
 
 ## Features Roadmap
 
+### 1.4
+* Upgraded Relationships
+
 ### 1.3
 * P2P Stats
 

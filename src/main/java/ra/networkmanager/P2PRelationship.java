@@ -9,24 +9,13 @@ import java.util.*;
 /**
  * Relationships among Network Peers.
  */
-class P2PRelationship implements JSONSerializable {
+public class P2PRelationship implements JSONSerializable {
 
     public static final String ACKS_BY_PEER = "ACKS_BY_PEER";
-
-    /**
-     * Relationship Type is based on what Network was used to establish it.
-     */
-    public enum RelType {
-        HTTP,
-        TOR,
-        I2P,
-        Bluetooth,
-        WiFiDirect,
-        Satellite,
-        FSRadio,
-        LiFi,
-        IMS
-    }
+    public static final String AVG_ACK_LATENCY_MS = "AVG_ACK_LATENCY_MS";
+    public static final String MEDIAN_ACK_LATENCY_MS = "MEDIAN_ACK_LATENCY_MS";
+    public static final String TOTAL_ACKS = "TOTAL_ACKS";
+    public static final String LAST_ACK_TIME = "LAST_ACK_TIME";
 
     private Map<String, List<Long>> acksByPeer = new HashMap<>();
     private transient Map<String, Long> startTimes = new HashMap<>();
@@ -106,20 +95,6 @@ class P2PRelationship implements JSONSerializable {
 
     public Boolean belowMaxLatency(String peerId, Long maxLatency) {
         return getAvgAckLatencyMS(peerId) < maxLatency && getMedAckLatencyMS(peerId) < maxLatency;
-    }
-
-    public static RelType networkToRelationship(String network) {
-        switch (network) {
-            case "HTTP": return RelType.HTTP;
-            case "Tor": return RelType.TOR;
-            case "I2P": return RelType.I2P;
-            case "Bluetooth": return RelType.Bluetooth;
-            case "WiFi": return RelType.WiFiDirect;
-            case "Satellite": return RelType.Satellite;
-            case "FSRadio": return RelType.FSRadio;
-            case "LiFi": return RelType.LiFi;
-            default: return null;
-        }
     }
 
     public Map<String, Object> toMap() {
