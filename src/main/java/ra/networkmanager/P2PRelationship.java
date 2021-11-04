@@ -41,6 +41,14 @@ public class P2PRelationship implements JSONSerializable {
         acks.add(ack);
     }
 
+    public void addAckTimeTracked(long timeAcknowledged, int maxAcksTracked) {
+
+    }
+
+    public void setLastAckTime(long timeAcknowledged) {
+
+    }
+
     public Integer getTotalAcks(String peerId) {
         List<Long> acks = acksByPeer.get(peerId);
         if(acks==null) {
@@ -75,6 +83,11 @@ public class P2PRelationship implements JSONSerializable {
         }
         if(acks.size()==0) return 0L;
         return acks.get(acks.size()-1);
+    }
+
+    public Long getAckTimesTracked(String peerId) {
+
+        return 0L;
     }
 
     public Boolean isReliable(String peerId) {
