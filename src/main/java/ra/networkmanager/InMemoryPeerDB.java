@@ -114,6 +114,16 @@ public class InMemoryPeerDB implements PeerDB {
     }
 
     @Override
+    public NetworkPeer randomPeerWithInternetAccessAvailable(Network network) {
+        return null;
+    }
+
+    @Override
+    public NetworkPeer randomPeerWithSpecificNetworkAvailable(Network nonInternetNetworkDesired, Network availableNetworkWithinPeer) {
+        return null;
+    }
+
+    @Override
     public boolean init(Properties p) {
         this.properties = p;
         if(p.getProperty("ra.networkmanager.maxPeersPerNetwork")!=null) {

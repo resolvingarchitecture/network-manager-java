@@ -27,6 +27,10 @@ public interface PeerDB {
 
     Set<NetworkPeer> findPeersByService(String serviceName);
 
+    NetworkPeer randomPeerWithInternetAccessAvailable(Network network);
+
+    NetworkPeer randomPeerWithSpecificNetworkAvailable(Network nonInternetNetworkDesired, Network availableNetworkWithinPeer);
+
     boolean init(Properties p);
 
     boolean teardown();
