@@ -13,9 +13,9 @@ public interface PeerDB {
 
     NetworkPeer findPeer(NetworkPeer np);
 
-    int numberPeersByNetwork(Network network);
+    long numberPeersByNetwork(Network network);
 
-    int numberSeedPeersByNetwork(Network network);
+    long numberSeedPeersByNetwork(Network network);
 
     NetworkPeer getLocalPeerByNetwork(Network network);
 

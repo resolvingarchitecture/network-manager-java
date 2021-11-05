@@ -64,13 +64,13 @@ public class InMemoryPeerDB implements PeerDB {
     }
 
     @Override
-    public int numberPeersByNetwork(Network network) {
+    public long numberPeersByNetwork(Network network) {
         if(peersByNetwork.get(network)==null) return 0;
         return peersByNetwork.get(network).size();
     }
 
     @Override
-    public int numberSeedPeersByNetwork(Network network) {
+    public long numberSeedPeersByNetwork(Network network) {
         if(seedPeersByNetwork.get(network)==null || seedPeersByNetwork.get(network).isEmpty()) return 0;
         return seedPeersByNetwork.get(network).size();
     }
