@@ -70,6 +70,11 @@ public class InMemoryPeerDB implements PeerDB {
     }
 
     @Override
+    public long numberPeersByNetwork(String startingId, Network network) {
+        return 0;
+    }
+
+    @Override
     public long numberSeedPeersByNetwork(Network network) {
         if(seedPeersByNetwork.get(network)==null || seedPeersByNetwork.get(network).isEmpty()) return 0;
         return seedPeersByNetwork.get(network).size();

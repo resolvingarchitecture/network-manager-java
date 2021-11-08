@@ -19,6 +19,19 @@ public enum RelType {
     IMS,
     Unknown;
 
+    public static Network toNetwork(String relType) {
+        switch (relType) {
+            case "Tor": return Network.Tor;
+            case "I2P": return Network.I2P;
+            case "Bluetooth": return Network.Bluetooth;
+            case "WiFi": return Network.WiFi;
+            case "Satellite": return Network.Satellite;
+            case "FSRadio": return Network.FSRadio;
+            case "LiFi": return Network.LiFi;
+            default: return null;
+        }
+    }
+
     public static RelType fromNetwork(String network) {
         switch (network) {
             case "NFC": return NFC;

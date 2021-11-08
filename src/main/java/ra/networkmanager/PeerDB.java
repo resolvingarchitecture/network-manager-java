@@ -15,6 +15,8 @@ public interface PeerDB {
 
     long numberPeersByNetwork(Network network);
 
+    long numberPeersByNetwork(String startingId, Network network);
+
     long numberSeedPeersByNetwork(Network network);
 
     NetworkPeer getLocalPeerByNetwork(Network network);
