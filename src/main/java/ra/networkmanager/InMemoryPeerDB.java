@@ -13,8 +13,12 @@ public class InMemoryPeerDB implements PeerDB {
     private static final Logger LOG = Logger.getLogger(InMemoryPeerDB.class.getName());
 
     private Properties properties;
-    private Integer maxPeersByNetwork = 1000; // Default in code to one thousand
-    private final Integer peersToShareInDiscovery = 8;
+    private Integer maxPeersTotal = 3000;
+    private Integer maxPeersPerNetwork = 1500;
+    private Integer maxPeersI2P = 1500;
+    private Integer maxPeersTor = 1000;
+    private Integer maxPeersBluetooth = 20;
+    private Integer numPeersShare = 8;
 
     private final Map<Network,NetworkPeer> localPeerByNetwork = new HashMap<>();
     private final Map<Network,Set<NetworkPeer>> seedPeersByNetwork = new HashMap<>();
@@ -100,9 +104,9 @@ public class InMemoryPeerDB implements PeerDB {
     @Override
     public List<NetworkPeer> getRandomPeersToShareByNetwork(Network network) {
         Map<String, NetworkPeer> nps = new HashMap<>();
-        int maxTries = peersToShareInDiscovery * 2;
+        int maxTries = numPeersShare * 2;
         for(int i=0; i<maxTries; i++) {
-            if(nps.size()==peersToShareInDiscovery)
+            if(nps.size()==numPeersShare)
                 break;
             NetworkPeer np = getRandomPeerByNetwork(network);
             if(np==null)
@@ -131,8 +135,23 @@ public class InMemoryPeerDB implements PeerDB {
     @Override
     public boolean init(Properties p) {
         this.properties = p;
-        if(p.getProperty("ra.networkmanager.maxPeersPerNetwork")!=null) {
-            maxPeersByNetwork = Integer.parseInt(p.getProperty("ra.networkmanager.maxPeersPerNetwork"));
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.total")!=null) {
+            maxPeersTotal = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.total"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.perNetwork")!=null) {
+            maxPeersPerNetwork = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.perNetwork"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.i2p")!=null) {
+            maxPeersI2P = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.i2p"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.tor")!=null) {
+            maxPeersTor = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.tor"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.bluetooth")!=null) {
+            maxPeersPerNetwork = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.bluetooth"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.numPeersShare")!=null) {
+            maxPeersPerNetwork = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.numPeersShare"));
         }
         return true;
     }

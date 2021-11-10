@@ -18,14 +18,12 @@ public class NetworkDiscovery extends BaseTask {
     private static Logger LOG = Logger.getLogger(NetworkDiscovery.class.getName());
 
     private final NetworkManagerService service;
-//    private final P2PRelationship p2PRelationship;
     private final PeerDB peerDB;
 
-    public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB, P2PRelationship p2PRelationship) {
+    public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB) {
         super(NetworkDiscovery.class.getSimpleName(), taskRunner);
         this.service = service;
         this.peerDB = peerDB;
-//        this.p2PRelationship = p2PRelationship;
     }
 
     @Override

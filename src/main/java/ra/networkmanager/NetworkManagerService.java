@@ -503,7 +503,7 @@ public class NetworkManagerService extends BaseService {
             LOG.severe(e.getLocalizedMessage());
             return false;
         }
-        config.put("ra.network.manager.dir", getServiceDirectory().getAbsolutePath());
+        config.put("ra.networkmanager.dir", getServiceDirectory().getAbsolutePath());
         messageHold = new File(getServiceDirectory(), "msg");
         if(!messageHold.exists() && !messageHold.mkdir()) {
             LOG.severe("Unable to create message hold directory.");
@@ -532,7 +532,7 @@ public class NetworkManagerService extends BaseService {
     }
 
     protected void initDiscovery() {
-        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, null);
+        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB);
         overlay.setDelayed(true);
         overlay.setDelayTimeMS(40 * 1000L); // Delay for 40 seconds to start 30 seconds after DelaySend task
         overlay.setPeriodicity(60 * 1000L); // Check every minute
