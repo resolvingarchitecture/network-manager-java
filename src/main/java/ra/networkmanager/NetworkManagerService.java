@@ -74,7 +74,7 @@ public class NetworkManagerService extends BaseService {
     protected File messageHold;
     protected TaskRunner taskRunner;
     protected PeerDB peerDB;
-//    protected P2PRelationship p2PRelationship;
+    protected final Stats stats = new Stats();
 
     public NetworkManagerService() {
         super();
@@ -499,6 +499,7 @@ public class NetworkManagerService extends BaseService {
         updateStatus(ServiceStatus.INITIALIZING);
         try {
             config = Config.loadAll(p, "ra-network-manager.config");
+            stats.init(config);
         } catch (Exception e) {
             LOG.severe(e.getLocalizedMessage());
             return false;
