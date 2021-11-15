@@ -12,6 +12,11 @@ import java.util.*;
  */
 public class P2PRelationship implements JSONSerializable {
 
+    public static String AVG_ACK_LATENCY_MS = "avgAckLatencyMs";
+    public static String MEDIAN_ACK_LATENCY_MS = "medAckLatencyMs";
+    public static String TOTAL_ACKS = "totalAcks";
+    public static String LAST_ACK_TIME = "lastAckTime";
+
     private NetworkPeer startPeer;
     private NetworkPeer endPeer;
     private List<Long> ackTimes = new ArrayList<>();
