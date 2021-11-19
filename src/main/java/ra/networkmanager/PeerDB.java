@@ -25,7 +25,7 @@ public interface PeerDB {
 
     NetworkPeer getRandomPeerByNetwork(Network network);
 
-    List<NetworkPeer> getRandomPeersToShareByNetwork(Network network);
+    List<NetworkPeer> getRandomPeersToShareByNetwork(Network network, int numPeersShare);
 
     Set<NetworkPeer> findPeersByService(String serviceName);
 

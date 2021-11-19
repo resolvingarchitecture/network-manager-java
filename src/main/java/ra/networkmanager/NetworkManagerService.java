@@ -533,7 +533,7 @@ public class NetworkManagerService extends BaseService {
     }
 
     protected void initDiscovery() {
-        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB);
+        NetworkDiscovery overlay = new NetworkDiscovery(taskRunner, this, peerDB, config);
         overlay.setDelayed(true);
         overlay.setDelayTimeMS(40 * 1000L); // Delay for 40 seconds to start 30 seconds after DelaySend task
         overlay.setPeriodicity(60 * 1000L); // Check every minute

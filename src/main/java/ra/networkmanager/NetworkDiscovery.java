@@ -11,6 +11,7 @@ import ra.common.tasks.TaskRunner;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 public class NetworkDiscovery extends BaseTask {
@@ -20,10 +21,47 @@ public class NetworkDiscovery extends BaseTask {
     private final NetworkManagerService service;
     private final PeerDB peerDB;
 
-    public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB) {
+    private final Integer maxPeersTotal;
+    private final Integer maxPeersPerNetwork;
+    private final Integer maxPeersI2P;
+    private final Integer maxPeersTor;
+    private final Integer maxPeersBluetooth;
+    private final Integer numPeersShare;
+
+    public NetworkDiscovery(TaskRunner taskRunner, NetworkManagerService service, PeerDB peerDB, Properties p) {
         super(NetworkDiscovery.class.getSimpleName(), taskRunner);
         this.service = service;
         this.peerDB = peerDB;
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.total")==null) {
+            maxPeersTotal = 3000;
+        } else {
+            maxPeersTotal = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.total"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.perNetwork")==null) {
+            maxPeersPerNetwork = 1500;
+        } else {
+            maxPeersPerNetwork = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.perNetwork"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.i2p")==null) {
+            maxPeersI2P = 1500;
+        } else {
+            maxPeersI2P = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.i2p"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.tor")==null) {
+            maxPeersTor = 1000;
+        } else {
+            maxPeersTor = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.tor"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.maxPeers.bluetooth")==null) {
+            maxPeersBluetooth = 20;
+        } else {
+            maxPeersBluetooth = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.maxPeers.bluetooth"));
+        }
+        if(p.getProperty("ra.networkmanager.discovery.numPeersShare")==null) {
+            numPeersShare = 8;
+        } else {
+            numPeersShare = Integer.parseInt(p.getProperty("ra.networkmanager.discovery.numPeersShare"));
+        }
     }
 
     @Override
@@ -32,7 +70,7 @@ public class NetworkDiscovery extends BaseTask {
         for(NetworkState ns : networkStates) { // Iterate through Networks that have reported to the Network Manager
             if(ns.networkStatus == NetworkStatus.CONNECTED) { // If that Network is reporting connected...
                 Envelope e = Envelope.documentFactory();
-                List<NetworkPeer> nps = peerDB.getRandomPeersToShareByNetwork(ns.network);
+                List<NetworkPeer> nps = peerDB.getRandomPeersToShareByNetwork(ns.network, numPeersShare);
                 if(!nps.isEmpty()) {
                     List<Map<String, Object>> mNps = new ArrayList<>();
                     for (NetworkPeer np : nps) {
