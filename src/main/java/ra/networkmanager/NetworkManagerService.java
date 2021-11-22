@@ -208,7 +208,7 @@ public class NetworkManagerService extends BaseService {
                     if(obj instanceof NetworkPeer) {
                         NetworkPeer p = (NetworkPeer)obj;
                         if(p.getNetwork()!=null) {
-                            peerDB.savePeer(p, true, RelType.fromNetwork(p.getNetwork().name()));
+                            peerDB.savePeer(p, true, RelType.fromNetwork(p.getNetwork()));
                         }
                     }
                 }
@@ -220,7 +220,7 @@ public class NetworkManagerService extends BaseService {
                     if(obj instanceof NetworkPeer) {
                         NetworkPeer p = (NetworkPeer)obj;
                         if(p.getNetwork()!=null) {
-                            peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork().name()));
+                            peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork()));
                         }
                     }
                 }
@@ -247,7 +247,7 @@ public class NetworkManagerService extends BaseService {
                 }
                 for(NetworkPeer p : peers) {
                     if(p.getNetwork()!=null) {
-                        peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork().name()));
+                        peerDB.savePeer(p, false, RelType.fromNetwork(p.getNetwork()));
                     }
                 }
                 break;
@@ -258,7 +258,7 @@ public class NetworkManagerService extends BaseService {
                     ExternalRoute extRoute = (ExternalRoute) route;
                     NetworkPeer orig = extRoute.getOrigination();
                     if(orig.getNetwork()!=null) {
-                        peerDB.savePeer(orig, false, RelType.fromNetwork(orig.getNetwork().name()));
+                        peerDB.savePeer(orig, false, RelType.fromNetwork(orig.getNetwork()));
                     }
                     LOG.info("Adding ack...");
 //                   p2PRelationship.addAck(orig.getId(), new Date().getTime() - p2PRelationship.getStart(orig.getId()));
@@ -269,7 +269,7 @@ public class NetworkManagerService extends BaseService {
                            NetworkPeer np = new NetworkPeer(network);
                            np.fromMap(peerMap);
                            if(np.getNetwork()!=null) {
-                               peerDB.savePeer(np, false, RelType.fromNetwork(np.getNetwork().name()));
+                               peerDB.savePeer(np, false, RelType.fromNetwork(np.getNetwork()));
                            }
                        }
                     }
