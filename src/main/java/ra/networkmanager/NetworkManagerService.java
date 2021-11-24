@@ -148,7 +148,7 @@ public class NetworkManagerService extends BaseService {
                 break;
             }
             case OPERATION_ADD_SEED_PEER: {
-                Object obj = e.getValue(NetworkPeer.class.getName()+":Seed");
+                Object obj = e.getValue(NetworkPeer.class.getName());
                 if(obj instanceof NetworkPeer) {
                     peerDB.savePeer((NetworkPeer) obj, false, RelType.Seed);
                 }
