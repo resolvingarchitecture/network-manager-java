@@ -159,7 +159,7 @@ public class NetworkManagerService extends BaseService {
                 for(NetworkState ns : networkStates.values()) {
                     networks.add(ns.network.name());
                 }
-                e.addNVP(NetworkPeer.class.getName(), networks);
+                e.addNVP(Network.class.getName(), networks);
                 break;
             }
             case OPERATION_ACTIVE_NETWORKS: {
@@ -169,7 +169,7 @@ public class NetworkManagerService extends BaseService {
                         networks.add(ns.network.name());
                     }
                 }
-                e.addNVP(NetworkPeer.class.getName(), networks);
+                e.addNVP(Network.class.getName(), networks);
                 break;
             }
             case OPERATION_NETWORK_STATUS: {
