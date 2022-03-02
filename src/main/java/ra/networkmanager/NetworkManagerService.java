@@ -91,7 +91,6 @@ public class NetworkManagerService extends BaseService {
         Route r = envelope.getDynamicRoutingSlip().getCurrentRoute();
         switch(r.getOperation()) {
             case OPERATION_UPDATE_NETWORK_STATE: {
-                LOG.info("Received UPDATE_NETWORK_STATE event...");
                 updateNetworkState(envelope);
                 break;
             }
