@@ -295,59 +295,70 @@ public class NetworkManagerService extends BaseService {
         }
         EventMessage em = (EventMessage)e.getMessage();
         NetworkState networkState = (NetworkState)em.getMessage();
-        networkStates.put(networkState.network.name(), networkState);
-        switch (networkState.networkStatus) {
-            case NOT_INSTALLED: {
-                LOG.info(networkState.network.name() + " reporting not installed....");
-                break;
-            }
-            case WAITING: {
-                LOG.info(networkState.network.name() + " reporting waiting....");
-                break;
-            }
-            case FAILED: {
-                LOG.info(networkState.network.name() + " reporting network failed....");
-                break;
-            }
-            case HANGING: {
-                LOG.info(networkState.network.name() + " reporting network hanging....");
-                break;
-            }
-            case PORT_CONFLICT: {
-                LOG.info(networkState.network.name() + " reporting port conflict....");
-                break;
-            }
-            case CONNECTING: {
-                LOG.info(networkState.network.name() + " reporting connecting....");
-                break;
-            }
-            case CONNECTED: {
-                LOG.info(networkState.network.name() + " reporting connected.");
-                break;
-            }
-            case DISCONNECTED: {
-                LOG.info(networkState.network.name() + " reporting disconnected....");
-                break;
-            }
-            case VERIFIED: {
-                LOG.info(networkState.network.name() + " reporting verified.");
-                break;
-            }
-            case BLOCKED: {
-                LOG.info(networkState.network.name() + " reporting blocked.");
-                break;
-            }
-            case ERROR: {
-                LOG.info(networkState.network.name() + " reporting errored.");
-                break;
-            }
-            default: {
-                LOG.warning("Network Status for network "+networkState.network.name()+" not being handled: "+networkState.networkStatus.name());
-            }
+        boolean updatedState = false;
+        if(!networkStates.containsKey(networkState.network.name())) {
+            // Ensure a default status is present for all networks reporting
+            networkStates.put(networkState.network.name(), networkState);
+            updatedState = true;
+        } else if(!networkStates.get(networkState.network.name()).equals(networkState)) {
+            updatedState = true;
         }
-        // Send on to subscribers
-        e.addRoute("ra.notification.NotificationService","PUBLISH");
-        producer.send(e);
+        if(updatedState) {
+            // Only
+            networkStates.put(networkState.network.name(), networkState);
+            switch (networkState.networkStatus) {
+                case NOT_INSTALLED: {
+                    LOG.info(networkState.network.name() + " reporting not installed....");
+                    break;
+                }
+                case WAITING: {
+                    LOG.info(networkState.network.name() + " reporting waiting....");
+                    break;
+                }
+                case FAILED: {
+                    LOG.info(networkState.network.name() + " reporting network failed....");
+                    break;
+                }
+                case HANGING: {
+                    LOG.info(networkState.network.name() + " reporting network hanging....");
+                    break;
+                }
+                case PORT_CONFLICT: {
+                    LOG.info(networkState.network.name() + " reporting port conflict....");
+                    break;
+                }
+                case CONNECTING: {
+                    LOG.info(networkState.network.name() + " reporting connecting....");
+                    break;
+                }
+                case CONNECTED: {
+                    LOG.info(networkState.network.name() + " reporting connected.");
+                    break;
+                }
+                case DISCONNECTED: {
+                    LOG.info(networkState.network.name() + " reporting disconnected....");
+                    break;
+                }
+                case VERIFIED: {
+                    LOG.info(networkState.network.name() + " reporting verified.");
+                    break;
+                }
+                case BLOCKED: {
+                    LOG.info(networkState.network.name() + " reporting blocked.");
+                    break;
+                }
+                case ERROR: {
+                    LOG.info(networkState.network.name() + " reporting errored.");
+                    break;
+                }
+                default: {
+                    LOG.warning("Network Status for network " + networkState.network.name() + " not being handled: " + networkState.networkStatus.name());
+                }
+            }
+            // Send on to subscribers
+            e.addRoute("ra.notification.NotificationService","PUBLISH");
+            producer.send(e);
+        }
     }
 
     public Boolean isNetworkReady(Network network) {
